@@ -10606,7 +10606,8 @@ setTimeout(run,700);
       requestForm.dataset.farmerPoolWired='1';
       requestForm.addEventListener('submit',async e=>{
         e.preventDefault();
-        if(!isFarmer()){alert('Only farmers can create a community pool.');return;}
+        const resolvedProfile=await resolveAggregationProfile();
+        if(normalizedRole(resolvedProfile)!=='FARMER'){alert('Only farmers can create a community pool.');return;}
         const product_name=$('aggProductName')?.value.trim();
         const target_quantity=Number($('aggTargetQty')?.value);
         const unit=$('aggUnit')?.value||'KG';
@@ -12620,5 +12621,96 @@ window.__setLunduAIbusy=function(v){
 })();
 </script>
 
+<script id="LUNDUYAN_AGGREGATION_FARMER_FINAL_FIX">
+(function(){
+  'use strict';
+  if(window.__lunduyanAggregationFarmerFinalFix) return;
+  window.__lunduyanAggregationFarmerFinalFix=true;
+
+  function localProfile(){
+    try{
+      if(typeof currentProfile!=='undefined' && currentProfile) return currentProfile;
+    }catch(_){}
+    return window.currentProfile || null;
+  }
+  function roleOf(p){return String(p?.role||p?.user_role||p?.account_role||p?.type||'').trim().toUpperCase();}
+
+  async function resolveFarmer(){
+    let p=localProfile();
+    if(roleOf(p)==='FARMER'){
+      try{window.currentProfile=p;}catch(_){}
+      return p;
+    }
+    try{
+      const sb=window.supabaseClient || (typeof supabaseClient!=='undefined'?supabaseClient:null);
+      const session=await sb?.auth?.getSession?.();
+      const u=session?.data?.session?.user;
+      if(!u) return p;
+      const meta=u.user_metadata||{};
+      if(roleOf(meta)==='FARMER'){
+        p={...(p||{}),...meta,role:'FARMER'};
+      }else if(sb){
+        let q=await sb.from('users').select('*').eq('auth_user_id',u.id).maybeSingle();
+        if(!q?.data) q=await sb.from('users').select('*').eq('id',u.id).maybeSingle();
+        if(!q?.data && u.email) q=await sb.from('users').select('*').eq('email',u.email).maybeSingle();
+        if(q?.data) p={...(p||{}),...q.data};
+      }
+      if(roleOf(p)==='FARMER'){
+        try{window.currentProfile=p;}catch(_){}
+        try{currentProfile=p;}catch(_){}
+      }
+    }catch(err){console.warn('LUNDUYAN farmer role final sync:',err);}
+    return p;
+  }
+
+  async function forceFarmerUI(){
+    const p=await resolveFarmer();
+    const farmer=roleOf(p)==='FARMER';
+    const btn=document.getElementById('createAggregationBtn');
+    if(btn && farmer){
+      btn.hidden=false;
+      btn.disabled=false;
+      btn.removeAttribute('aria-hidden');
+      btn.style.setProperty('display','inline-flex','important');
+      btn.style.setProperty('visibility','visible','important');
+      btn.style.setProperty('opacity','1','important');
+      btn.onclick=function(e){
+        e.preventDefault();
+        if(typeof window.openAggregationRequest==='function') window.openAggregationRequest();
+      };
+    }
+    return farmer;
+  }
+
+  const oldOpen=window.openAggregationRequest;
+  window.openAggregationRequest=async function(){
+    const farmer=await forceFarmerUI();
+    if(!farmer){alert('Only farmers can create a community pool. Buyers can purchase completed pools.');return;}
+    const modal=document.getElementById('aggregationRequestModal');
+    if(modal) modal.classList.remove('hidden');
+    if(typeof setModalScrollLock==='function') setModalScrollLock(true);
+  };
+
+  function wire(){
+    forceFarmerUI();
+    const form=document.getElementById('aggregationRequestForm');
+    if(form && !form.dataset.finalFarmerRoleFix){
+      form.dataset.finalFarmerRoleFix='1';
+      form.addEventListener('submit',async function(e){
+        const farmer=await forceFarmerUI();
+        if(!farmer){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          alert('Only farmers can create a community pool.');
+        }
+      },true);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded',wire);
+  [500,1200,2500,5000].forEach(ms=>setTimeout(wire,ms));
+  try{new MutationObserver(()=>{if(document.getElementById('createAggregationBtn')) forceFarmerUI();}).observe(document.body,{childList:true,subtree:true});}catch(_){}
+})();
+</script>
 </body>
 </html>
