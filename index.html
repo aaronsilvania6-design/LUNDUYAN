@@ -2261,6 +2261,29 @@ body.modal-is-open{overscroll-behavior:none}
 }
 </style>
 
+
+<style id="LUNDUYAN-V11-CLOSE-AND-MODAL-FIX">
+/* V11: unmistakable black close controls everywhere. */
+.modal .close,.bot-window .close,.chat-contacts-close,.chat-header .close,
+#myProfileModal .close,#profileModal .close,#aggregationRequestModal .close,
+#aggregationContributionModal .close,#moderationFeedbackModal .close,#moderatorInboxModal .close{
+  background:#111 !important;color:#fff !important;border:2px solid #000 !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.25) !important;opacity:1 !important;
+  width:44px !important;height:44px !important;border-radius:50% !important;
+}
+/* Profile and messages never auto-close because of document click handlers. */
+#myProfileModal,#chatModal,#profileModal{pointer-events:auto !important;}
+#myProfileModal .modal-card,#chatModal .modal-card,#profileModal .modal-card{pointer-events:auto !important;}
+/* Profile has its own scroll container and safe bottom padding. */
+#myProfileModal .modal-card{max-height:92vh !important;overflow:hidden !important;}
+#myProfileModal #myProfileContent{max-height:calc(92vh - 80px) !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch !important;padding-bottom:32px !important;}
+</style>
+
+<style id="LUNDUYAN-V11-AGGREGATION-SAFETY">
+.aggregation-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.aggregation-report-btn{border:1px solid #111!important;background:#fff!important;color:#111!important;border-radius:12px!important;padding:10px 14px!important;font-weight:800!important;cursor:pointer!important}
+.aggregation-report-btn:hover{background:#111!important;color:#fff!important}
+</style>
 </head>
 <body>
 <!-- =======================================================
@@ -6523,22 +6546,30 @@ async function toggleBlockFarmer(farmerId,farmerName){
   alert(`${farmerName} has been unblocked. Their products are back in the marketplace.`);
 }
 
+async function submitModeratorFeedback(payload){
+  if(!supabaseClient) throw new Error('Supabase connection is not ready.');
+  const args={p_subject:String(payload?.subject||'General feedback'),p_message:String(payload?.message||''),p_category:String(payload?.category||'FEEDBACK'),p_reported_account:payload?.reported_account?String(payload.reported_account):null,p_reason:payload?.reason?String(payload.reason):null};
+  /* Preferred path: server-side auth.uid() RPC, which avoids stale/mismatched
+     client profile IDs and is protected by the database function. */
+  const {data,error}=await supabaseClient.rpc('submit_moderator_feedback',args);
+  if(!error)return data;
+  /* Compatibility fallback for projects where the RPC has not been deployed yet. */
+  const direct={sender_id:String(currentProfile?.id||''),subject:args.p_subject,message:args.p_message,category:args.p_category,reported_account:args.p_reported_account,reason:args.p_reason,status:'OPEN'};
+  if(!direct.sender_id)throw error;
+  const fallback=await supabaseClient.from('moderator_feedback').insert(direct).select('id,status').single();
+  if(fallback.error)throw error;
+  return fallback.data;
+}
+
 async function reportFarmer(farmerId,farmerName){
   if(!currentProfile || !farmerId) return;
   const reason=prompt(`Why are you reporting ${farmerName}? Examples: spam, fake profile, suspicious activity, harassment, inappropriate content, or other.`);
   if(reason===null) return;
   const cleanReason=reason.trim()||'Other';
   const details=prompt('Optional: add more details about this report.')||'';
-  const {error}=await supabaseClient.from('moderator_feedback').insert({
-    sender_id:String(currentProfile.id),
-    subject:'Account report: '+String(farmerName||'User'),
-    message:details.trim()||'No additional details provided.',
-    category:'REPORT',
-    reported_account:String(farmerName||farmerId),
-    reason:cleanReason,
-    status:'OPEN'
-  });
-  if(error){ alert('Unable to submit report: '+error.message); return; }
+  try{
+    await submitModeratorFeedback({subject:'Account report: '+String(farmerName||'User'),message:details.trim()||'No additional details provided.',category:'REPORT',reported_account:String(farmerId),reason:cleanReason});
+  }catch(error){ alert('Unable to submit report: '+(error?.message||error)); return; }
   alert('Report sent to LUNDUYAN moderators. Thank you.');
 }
 
@@ -7570,9 +7601,29 @@ html.modal-is-open,body.modal-is-open,body.modal-open{overflow:hidden!important;
   }
 
   function wireChatForm(){
-    const old=$('chatForm');if(!old)return;
-    if(old.dataset.finalWired)return;
-    const clone=old.cloneNode(true);old.replaceWith(clone);clone.dataset.finalWired='1';clone.addEventListener('submit',finalSendMessage);
+    const form=$('chatForm');if(!form)return;
+    if(form.dataset.lunduyanStableChatForm==='1')return;
+    /* Replace legacy handlers once, then mark this exact form. */
+    const clone=form.cloneNode(true);
+    clone.dataset.lunduyanStableChatForm='1';
+    form.replaceWith(clone);
+  }
+
+  /* One authoritative submit handler. Capture phase prevents old/duplicate
+     handlers from firing twice or allowing a native form reload/crash. */
+  if(!window.__LUNDUYAN_STABLE_CHAT_SUBMIT__){
+    window.__LUNDUYAN_STABLE_CHAT_SUBMIT__=true;
+    document.addEventListener('submit',function(e){
+      const form=e.target?.closest?.('#chatForm');
+      if(!form)return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      Promise.resolve(finalSendMessage(e)).catch(err=>{
+        console.error('LUNDUYAN chat send:',err);
+        const input=$('chatInput'); if(input)input.disabled=false;
+        alert(err?.message||'Unable to send the message. Please try again.');
+      });
+    },true);
   }
 
   function moveSearchNearProducts(){
@@ -7593,6 +7644,7 @@ html.modal-is-open,body.modal-is-open,body.modal-open{overflow:hidden!important;
   }
 
   /* Public replacements */
+  window.wireLunduStableChatForm=wireChatForm;
   window.startChat=finalStartChat;
 
   window.openChat=async function(){
@@ -8470,10 +8522,10 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
     if(reason===null)return;
     const clean=reason.trim()||'Other';
     const details=prompt('Optional: Add more details about this report.')||null;
-    const {error}=await supabaseClient.from('moderator_feedback').insert({sender_id:String(currentProfile.id),subject:'Account report',message:details?.trim()||'No additional details provided.',category:'REPORT',reported_account:String(otherId),reason:clean,status:'OPEN'});
-    if(error){
-      if(String(error.code)==='23505'||String(error.message).toLowerCase().includes('duplicate'))alert('You already reported this account.');
-      else alert(error.message);
+    try{ await submitModeratorFeedback({subject:'Account report',message:details?.trim()||'No additional details provided.',category:'REPORT',reported_account:String(otherId),reason:clean}); }
+    catch(error){
+      if(String(error?.code)==='23505'||String(error?.message||'').toLowerCase().includes('duplicate'))alert('You already reported this account.');
+      else alert(error?.message||error);
       return;
     }
     alert('Report submitted successfully.');
@@ -8818,14 +8870,10 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
     if(reason===null)return;
     const clean=reason.trim()||'Other';
     const details=prompt('Optional: Add more details about this report.')||null;
-    const {error}=await supabaseClient.from('moderator_feedback').insert({
-      sender_id:sid(currentProfile.id),subject:'Account report',
-      message:details?.trim()||'No additional details provided.',category:'REPORT',
-      reported_account:sid(otherId),reason:clean,status:'OPEN'
-    });
-    if(error){
-      if(String(error.code)==='23505'||String(error.message).toLowerCase().includes('duplicate'))alert('You already reported this account.');
-      else alert(error.message);return;
+    try{ await submitModeratorFeedback({subject:'Account report',message:details?.trim()||'No additional details provided.',category:'REPORT',reported_account:sid(otherId),reason:clean}); }
+    catch(error){
+      if(String(error?.code)==='23505'||String(error?.message||'').toLowerCase().includes('duplicate'))alert('You already reported this account.');
+      else alert(error?.message||error);return;
     }
     alert('Report submitted successfully.');
   };
@@ -10374,6 +10422,12 @@ setTimeout(run,700);
     if(note)note.textContent=isFarmer()?'Farmers create pools, contribute harvest, and vote on the final price.':'Buyers wait for a completed farmer pool, then buy the entire pooled supply.';
   }
 
+  async function createCommunityPool(payload){
+    const {data,error}=await supabaseClient.rpc('create_community_pool',{p_product_name:String(payload.product_name),p_target_quantity:Number(payload.target_quantity),p_unit:String(payload.unit||'KG'),p_offer_price:Number(payload.offer_price),p_location:String(payload.location),p_description:payload.description?String(payload.description):null});
+    if(error) throw error;
+    return data;
+  }
+
   window.openAggregationRequest=function(){
     if(!isFarmer()){alert('Only farmers can create a community pool. Buyers can purchase completed pools.');return;}
     $('aggregationRequestModal')?.classList.remove('hidden');
@@ -10473,7 +10527,10 @@ setTimeout(run,700);
       if(currentRole==='BUYER'&&status==='OPEN') action=`<span class="aggregation-waiting">Waiting for farmers · ${contributorCount} contributor${contributorCount===1?'':'s'}</span>`;
       if(status==='SOLD') action=`<span class="aggregation-waiting success">Community pool purchased</span>`;
       const contributorsHtml=contributors.map(c=>`<div class="aggregation-contributor"><span>👨‍🌾 ${esc(c.farmer?.full_name||'Farmer')}</span><span>${esc(c.quantity)} ${esc(r.unit)}</span></div>`).join('');
-      return `<article class="aggregation-card"><div class="aggregation-card-top"><div><div class="aggregation-product">🌾 ${esc(String(r.product_name||'').toUpperCase())} COMMUNITY POOL</div><div class="aggregation-meta">Created by: ${esc(r.creator?.full_name||'Farmer')} · ${esc(r.location||'Location not set')}</div></div><span class="aggregation-status ${statusClass}">${esc(status.replaceAll('_',' '))}</span></div><div class="aggregation-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${esc(target)}" aria-valuenow="${esc(total)}"><span style="width:${pct}%"></span></div><div class="aggregation-numbers"><strong>${esc(total)} / ${esc(target)} ${esc(r.unit)}</strong><span>${esc(remaining)} ${esc(r.unit)} remaining</span></div><div class="aggregation-pool-stats"><span>👨‍🌾 <b>${contributorCount}</b> farmer${contributorCount===1?'':'s'} contributing</span><span>🎯 ${Math.round(pct)}% complete</span></div><div class="aggregation-price">₱${money(displayedPrice)} / ${esc(r.unit)} ${String(r.poll?.status||'').toUpperCase()==='OPEN'?'· starting price':''}</div><div class="aggregation-contributors">${contributorsHtml||'<div class="aggregation-meta">No farmer contributions yet.</div>'}</div>${renderPricePoll(r)}<div class="aggregation-actions">${action}</div></article>`;
+      const creatorId=String(r.creator_id||'');
+      const creatorName=String(r.creator?.full_name||'Farmer');
+      const reportCreator=(creatorId && creatorId!==String(window.currentProfile?.id||''))?`<button type="button" class="aggregation-report-btn" onclick="reportUser('${esc(creatorId)}','${esc(creatorName).replaceAll("'","&#39;")}')">⚑ Report pool creator</button>`:'';
+      return `<article class="aggregation-card"><div class="aggregation-card-top"><div><div class="aggregation-product">🌾 ${esc(String(r.product_name||'').toUpperCase())} COMMUNITY POOL</div><div class="aggregation-meta">Created by: ${esc(creatorName)} · ${esc(r.location||'Location not set')}</div></div><span class="aggregation-status ${statusClass}">${esc(status.replaceAll('_',' '))}</span></div><div class="aggregation-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${esc(target)}" aria-valuenow="${esc(total)}"><span style="width:${pct}%"></span></div><div class="aggregation-numbers"><strong>${esc(total)} / ${esc(target)} ${esc(r.unit)}</strong><span>${esc(remaining)} ${esc(r.unit)} remaining</span></div><div class="aggregation-pool-stats"><span>👨‍🌾 <b>${contributorCount}</b> farmer${contributorCount===1?'':'s'} contributing</span><span>🎯 ${Math.round(pct)}% complete</span></div><div class="aggregation-price">₱${money(displayedPrice)} / ${esc(r.unit)} ${String(r.poll?.status||'').toUpperCase()==='OPEN'?'· starting price':''}</div><div class="aggregation-contributors">${contributorsHtml||'<div class="aggregation-meta">No farmer contributions yet.</div>'}</div>${renderPricePoll(r)}<div class="aggregation-actions">${action}</div></article>`;
     }).join('');
   }
 
@@ -10514,8 +10571,8 @@ setTimeout(run,700);
         const location=$('aggLocation')?.value.trim();
         const description=$('aggDescription')?.value.trim()||null;
         if(!product_name||target_quantity<=0||offer_price<0||!location){alert('Please complete the required fields.');return;}
-        const {error}=await supabaseClient.from('aggregation_requests').insert({creator_id:currentProfile.id,buyer_id:null,product_name,target_quantity,unit,offer_price,location,description,status:'OPEN'});
-        if(error){alert(error.message);return;}
+        try{ await createCommunityPool({product_name,target_quantity,unit,offer_price,location,description}); }
+        catch(error){alert(error?.message||error);return;}
         requestForm.reset();closeAggregationRequest();await loadAggregations();
       });
     }
@@ -10530,7 +10587,12 @@ setTimeout(run,700);
         const quantity=Number($('aggContributionQty')?.value);
         if(quantity<=0){alert('Enter a valid contribution.');return;}
         const {data,error}=await supabaseClient.rpc('contribute_to_aggregation',{p_request_id:requestId,p_quantity:quantity});
-        if(error){alert(error.message);return;}
+        if(error){
+          /* V12 also grants direct INSERT to authenticated FARMER accounts,
+             so contribution still works if an older RPC is missing/broken. */
+          const fallback=await supabaseClient.from('aggregation_contributions').insert({request_id:requestId,farmer_id:String(currentProfile.id),quantity,status:'ACTIVE'}).select('id').single();
+          if(fallback.error){alert(error.message);return;}
+        }
         closeAggregationContribution();await loadAggregations();
         alert(data?.target_reached?'Contribution saved. The target is reached — the pool is now ready for buyer purchase.':'Contribution saved successfully.');
       });
@@ -11256,6 +11318,7 @@ window.__setLunduAIbusy=function(v){
     installCleanNav();
     installExclusiveButtonGuard();
     ensureChatUI();
+    if(typeof window.wireLunduStableChatForm==='function')window.wireLunduStableChatForm();
     syncChatLock();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,250));
@@ -11926,7 +11989,7 @@ window.__setLunduAIbusy=function(v){
         `;
       box.appendChild(actions);
     }
-    if(['MODERATOR','ADMIN'].includes(role()) && !box.querySelector('.lunduyan-moderator-btn')){
+    if(['MODERATOR','ADMIN','DEVELOPER'].includes(role()) && !box.querySelector('.lunduyan-moderator-btn')){
       const b=document.createElement('button');
       b.type='button'; b.className='lunduyan-moderator-btn primary-btn';
       b.style.cssText='width:100%;min-height:46px;margin-top:10px;border-radius:13px';
@@ -11981,21 +12044,13 @@ window.__setLunduAIbusy=function(v){
         const subject=$('moderationSubject')?.value.trim()||'General feedback';
         const message=$('moderationMessage')?.value.trim()||'';
         if(!message){if(status)status.innerHTML='<div class="message error">Please write your message first.</div>';return;}
-        const {error}=await supabaseClient.from('moderator_feedback').insert({
-          sender_id:sid(p.id),subject, message, category:'FEEDBACK',status:'OPEN'
-        });
-        if(error)throw error;
+        await submitModeratorFeedback({subject,message,category:'FEEDBACK'});
       }else{
         const reported=$('moderationReportedUser')?.value.trim()||'';
         const reason=$('moderationReportReason')?.value||'Other';
         const details=$('moderationReportMessage')?.value.trim()||'';
         if(!reported){if(status)status.innerHTML='<div class="message error">Enter the account you want to report.</div>';return;}
-        const {error}=await supabaseClient.from('moderator_feedback').insert({
-          sender_id:sid(p.id),subject:'Account report: '+reported,
-          message:details||'No additional details provided.',
-          category:'REPORT',reported_account:reported,reason,status:'OPEN'
-        });
-        if(error)throw error;
+        await submitModeratorFeedback({subject:'Account report: '+reported,message:details||'No additional details provided.',category:'REPORT',reported_account:reported,reason});
       }
       if(status)status.innerHTML='<div class="message success">Sent successfully. Thank you for helping improve LUNDUYAN.</div>';
       setTimeout(()=>window.closeModerationFeedback(),700);
@@ -12010,7 +12065,7 @@ window.__setLunduAIbusy=function(v){
 
   /* ---------- Moderator inbox ---------- */
   window.openModeratorInbox=async function(){
-    if(!['MODERATOR','ADMIN'].includes(role())){alert('Moderator access only.');return;}
+    if(!['MODERATOR','ADMIN','DEVELOPER'].includes(role())){alert('Moderator access only.');return;}
     const modal=$('moderatorInboxModal'), box=$('moderatorInboxContent');
     if(!modal||!box)return;
     modal.classList.remove('hidden');
@@ -12039,7 +12094,7 @@ window.__setLunduAIbusy=function(v){
   };
 
   window.updateModeratorMessage=async function(id,status){
-    if(!['MODERATOR','ADMIN'].includes(role()))return;
+    if(!['MODERATOR','ADMIN','DEVELOPER'].includes(role()))return;
     const {error}=await supabaseClient.from('moderator_feedback').update({status}).eq('id',sid(id));
     if(error){alert(error.message);return;}
     await openModeratorInbox();
@@ -12059,21 +12114,24 @@ window.__setLunduAIbusy=function(v){
     if(typeof setModalScrollLock==='function')setModalScrollLock(!!document.querySelector('.modal:not(.hidden)'));
   }
 
-  /* Capture navigation clicks before old inline handlers run. */
+  /* Capture ONLY real navigation/open actions. Do not close a modal when the user
+     clicks Submit, Send, Feedback, Report, Contribute, Vote, Save, etc. */
   document.addEventListener('click',function(ev){
     const el=ev.target?.closest?.('button,a');
     if(!el)return;
     const action=(el.getAttribute('onclick')||'').replace(/\s+/g,' ');
-    let keep=null;
-    if(/openChat\s*\(/.test(action))keep='chatModal';
+    let keep=undefined;
+    if(/openChat\s*\(/.test(action) || el.classList.contains('nav-chat-btn'))keep='chatModal';
     else if(/openMyProfile\s*\(/.test(action))keep='myProfileModal';
     else if(/openFarmerProfile\s*\(/.test(action)||/openUserProfile\s*\(/.test(action))keep='profileModal';
     else if(/openBuyModal\s*\(/.test(action))keep='buyModal';
     else if(/openAddProduct\s*\(/.test(action))keep='productModal';
     else if(/openAggregationRequest\s*\(/.test(action))keep='aggregationRequestModal';
     else if(/openBlockedAccounts\s*\(/.test(action))keep='blockedAccountsModal';
+    else if(/openModerationFeedback\s*\(/.test(action))keep='moderationFeedbackModal';
+    else if(/openModeratorInbox\s*\(/.test(action))keep='moderatorInboxModal';
     else if(/toggleLUNDUYANAI\s*\(/.test(action))keep='botWindow';
-    else if(/toggleNotifications\s*\(/.test(action))keep=null;
+    else if(/toggleNotifications\s*\(/.test(action))keep='notificationPanel';
     else if(/logout\s*\(/.test(action))keep=null;
     if(keep!==undefined)closeOtherOverlays(keep);
   },true);
@@ -12358,5 +12416,22 @@ window.__setLunduAIbusy=function(v){
 })();
 </script>
 
+
+<script id="LUNDUYAN-V11-NAV-FINAL">
+(function(){
+  if(window.__LUNDUYAN_V11_NAV_FINAL__) return; window.__LUNDUYAN_V11_NAV_FINAL__=true;
+  const $=id=>document.getElementById(id);
+  function closeForNav(){
+    ['chatModal','myProfileModal','profileModal','productModal','buyModal','reviewModal','aggregationRequestModal','aggregationContributionModal','blockedAccountsModal','moderationFeedbackModal','moderatorInboxModal','notificationPanel','botWindow'].forEach(id=>$(id)?.classList.add('hidden'));
+    if(typeof window.setModalScrollLock==='function') window.setModalScrollLock(false);
+  }
+  document.addEventListener('click',function(e){
+    const el=e.target?.closest?.('[data-section], .nav-item, .mobile-nav-item, .mobile-bottom-nav button, header nav button');
+    if(!el) return;
+    if(el.closest('#chatModal,#myProfileModal,#profileModal,#botWindow')) return;
+    closeForNav();
+  },true);
+})();
+</script>
 </body>
 </html>
