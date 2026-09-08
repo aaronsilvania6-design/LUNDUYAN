@@ -10616,7 +10616,7 @@ setTimeout(run,700);
         const description=$('aggDescription')?.value.trim()||null;
         if(!product_name||target_quantity<=0||offer_price<0||!location){alert('Please complete the required fields.');return;}
         try{ await createCommunityPool({product_name,target_quantity,unit,offer_price,location,description}); }
-        catch(error){alert(error?.message||error);return;}
+        catch(error){console.error('LUNDUYAN create_community_pool RPC error:',error);alert('Community pool could not be created. '+(error?.message||error));return;}
         requestForm.reset();closeAggregationRequest();await loadAggregations();
       });
     }
@@ -12633,7 +12633,7 @@ window.__setLunduAIbusy=function(v){
     }catch(_){}
     return window.currentProfile || null;
   }
-  function roleOf(p){return String(p?.role||p?.user_role||p?.account_role||p?.type||'').trim().toUpperCase();}
+  function roleOf(p){return String(p?.role||p?.user_role||p?.account_role||p?.account_type||p?.accountType||p?.user_type||p?.userType||p?.user_role_type||p?.profile_role||p?.type||'').trim().toUpperCase();}
 
   async function resolveFarmer(){
     let p=localProfile();
@@ -12697,7 +12697,7 @@ window.__setLunduAIbusy=function(v){
     if(form && !form.dataset.finalFarmerRoleFix){
       form.dataset.finalFarmerRoleFix='1';
       form.addEventListener('submit',async function(e){
-        const farmer=await forceFarmerUI();
+        const farmer=await hardSyncFarmerRole();
         if(!farmer){
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -12709,6 +12709,20 @@ window.__setLunduAIbusy=function(v){
 
   document.addEventListener('DOMContentLoaded',wire);
   [500,1200,2500,5000].forEach(ms=>setTimeout(wire,ms));
+
+  /* FINAL ROLE BRIDGE: some app/profile versions store the farmer role under
+     account_type/user_type instead of role. Keep both profile references in sync. */
+  async function hardSyncFarmerRole(){
+    const p=await resolveFarmer();
+    const r=roleOf(p);
+    if(r==='FARMER'){
+      try{ p.role='FARMER'; }catch(_){}
+      try{ window.currentProfile=p; }catch(_){}
+      try{ currentProfile=p; }catch(_){}
+    }
+    return r==='FARMER';
+  }
+  [100,700,1800,3500,7000].forEach(ms=>setTimeout(hardSyncFarmerRole,ms));
   try{new MutationObserver(()=>{if(document.getElementById('createAggregationBtn')) forceFarmerUI();}).observe(document.body,{childList:true,subtree:true});}catch(_){}
 })();
 </script>
