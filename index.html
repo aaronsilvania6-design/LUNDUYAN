@@ -2453,9 +2453,6 @@ APP
 <button class="secondary-btn nav-add-product-btn hidden" id="addProductButton" onclick="openAddProduct()">
 + Product
 </button>
-<button class="danger-btn nav-logout-btn" onclick="logout()">
-Logout
-</button>
 </div>
 </nav>
 <div class="notification-panel hidden" id="notificationPanel">
@@ -9115,51 +9112,6 @@ setTimeout(run,700);
 }
 #LUNDUYANKeepLogout{display:block!important;width:100%!important;min-height:44px!important;margin-top:12px!important}
 </style>
-<script id="LUNDUYAN-final-profile-actions-js">
-(function(){
-'use strict';
-function fixProfile(){
- const box=document.getElementById('myProfileContent');
- const modal=document.getElementById('myProfileModal');
- if(!box||!modal||modal.classList.contains('hidden'))return;
- /* Remove only duplicate/injected blocked-manager wrappers; keep ONE real manager button. */
- const managers=[...box.querySelectorAll('.mobile-blocked-management')];
- managers.slice(1).forEach(x=>x.remove());
- const buttons=[...box.querySelectorAll('button')].filter(b=>/Manage Blocked Accounts/i.test(b.textContent||''));
- buttons.slice(1).forEach(b=>b.closest('.mobile-blocked-management')?.remove()||b.remove());
- if(!box.querySelector('button'))return;
- /* Keep Logout. If the profile renderer removed it, recreate it here. */
- if(!box.querySelector('#LUNDUYANKeepLogout')){
-   const b=document.createElement('button');
-   b.id='LUNDUYANKeepLogout';b.type='button';b.className='danger-btn';b.textContent='🚪 Logout';
-   b.onclick=async function(){
-     if(!confirm('Are you sure you want to log out?'))return;
-     try{ if(typeof logout==='function') await logout(); else if(window.supabaseClient?.auth) await window.supabaseClient.auth.signOut(); }
-     finally{
-       document.getElementById('myProfileModal')?.classList.add('hidden');
-       document.getElementById('profileModal')?.classList.add('hidden');
-       document.getElementById('blockedAccountsModal')?.classList.add('hidden');
-       document.getElementById('chatModal')?.classList.add('hidden');
-       document.getElementById('notificationPanel')?.classList.add('hidden');
-       document.getElementById('mobileBottomNav')?.style.setProperty('display','none','important');
-       document.getElementById('app')?.classList.add('hidden');
-       document.getElementById('landingScreen')?.classList.remove('hidden');
-       document.getElementById('authScreen')?.classList.remove('hidden');
-       window.scrollTo(0,0);
-     }
-   };
-   box.appendChild(b);
- }
- /* Desktop/tablet: remove the Block button from another user's profile, but NEVER remove Logout/Manage Blocked. */
- if(window.matchMedia('(min-width:701px)').matches){
-   document.querySelectorAll('.profile-action-row .block-user-btn').forEach(b=>{b.style.setProperty('display','block','important');});
- }
-}
-function run(){fixProfile()}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,400));else setTimeout(run,400);
-setTimeout(run,600);
-})();
-</script>
 <!-- FINAL PROFILE + MESSENGER RESPONSIVE FIX -->
 <script id="LUNDUYAN-block-unblock-final-guard">
 (function(){
@@ -9501,141 +9453,6 @@ setTimeout(run,600);
 
 /* If a panel is open, its own content remains the only visible panel. */
 </style>
-<script id="AGRI_EXCLUSIVE_PANEL_FIX_JS">
-(function(){
-  'use strict';
-
-  const PANEL_IDS=[
-    'notificationPanel',
-    'botWindow',
-    'chatModal',
-    'profileModal',
-    'myProfileModal',
-    'blockedAccountsModal',
-    'buyModal',
-    'orderDetailsModal'
-  ];
-
-  let changing=false;
-
-  function panels(){
-    return PANEL_IDS
-      .map(id=>document.getElementById(id))
-      .filter(Boolean);
-  }
-
-  function isOpen(el){
-    return !el.classList.contains('hidden');
-  }
-
-  function closePanel(el){
-    if(!el || el.classList.contains('hidden'))return;
-    el.classList.add('hidden');
-    el.setAttribute('aria-hidden','true');
-  }
-
-  function unlockIfNothingOpen(){
-    const anyOpen=panels().some(isOpen);
-    if(!anyOpen && typeof window.setModalScrollLock==='function'){
-      try{window.setModalScrollLock(false)}catch(_){}
-    }
-  }
-
-  function showOnly(target){
-    if(!target)return;
-
-    changing=true;
-    panels().forEach(p=>{
-      if(p!==target)closePanel(p);
-    });
-    target.classList.remove('hidden');
-    target.setAttribute('aria-hidden','false');
-    changing=false;
-  }
-
-  /* Called whenever a known panel is opened by an existing function. */
-  function enforceOneOpen(){
-    if(changing)return;
-
-    const open=panels().filter(isOpen);
-    if(open.length<=1)return;
-
-    /* Keep the most recently opened/changed panel. */
-    const target=open[open.length-1];
-
-    changing=true;
-    open.forEach(p=>{
-      if(p!==target)closePanel(p);
-    });
-    changing=false;
-  }
-
-  /* Navigation buttons: close everything before the existing onclick runs. */
-  document.addEventListener('click',function(e){
-    const btn=e.target.closest('button,[role="button"]');
-    if(!btn)return;
-
-    const action=String(btn.getAttribute('onclick')||'').replace(/\s/g,'');
-
-    let target=null;
-
-    if(action.includes('toggleNotifications(')){
-      target=document.getElementById('notificationPanel');
-    }else if(action.includes('toggleLUNDUYANAI(')){
-      target=document.getElementById('botWindow');
-    }else if(action.includes('openChat(')){
-      target=document.getElementById('chatModal');
-    }else if(action.includes('openMyProfile(')){
-      target=document.getElementById('myProfileModal');
-    }else if(action.includes('openBlockedAccounts(')){
-      target=document.getElementById('blockedAccountsModal');
-    }else if(action.includes('openAddProduct(')){
-      /* Add Product may be created by the existing app dynamically. */
-      target=document.getElementById('addProductModal');
-    }
-
-    if(target){
-      changing=true;
-      panels().forEach(p=>{if(p!==target)closePanel(p)});
-      changing=false;
-    }
-  },true);
-
-  /* Watch class changes so dynamically-created modals cannot stack. */
-  const observer=new MutationObserver(function(records){
-    if(changing)return;
-
-    let relevant=false;
-    for(const r of records){
-      if(r.type==='attributes' && r.attributeName==='class'){
-        const el=r.target;
-        if(PANEL_IDS.includes(el.id)){
-          relevant=true;
-          break;
-        }
-      }
-    }
-
-    if(relevant)enforceOneOpen();
-  });
-
-  function boot(){
-    panels().forEach(p=>{
-      observer.observe(p,{attributes:true,attributeFilter:['class']});
-    });
-    enforceOneOpen();
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,250));
-  }else{
-    setTimeout(boot,250);
-  }
-
-  /* Performance: avoid observing the entire document.
-     Individual panels are already observed above. */
-})();
-</script>
 <!-- BLOCKING SYSTEM FROM index (1).html -->
 <!-- PROFILE BLOCK CLICKABILITY FINAL FIX -->
 <style id="PROFILE_BLOCK_CLICKABILITY_FINAL">
@@ -10757,87 +10574,6 @@ setTimeout(run,600);
   #mobileBottomNav{z-index:1000!important}
 }
 </style>
-<script id="LUNDUYAN_FINAL_V2_CLEAN_PATCH_JS">
-(function(){
-  'use strict';
-  if(window.__lunduyanFinalV2Patch) return;
-  window.__lunduyanFinalV2Patch=true;
-  const $=id=>document.getElementById(id);
-
-  function authBack(){
-    const auth=$('authScreen'),landing=$('landingScreen');
-    if(!auth||!landing)return;
-    auth.classList.add('hidden');
-    document.body.classList.remove('auth-view');
-    landing.classList.remove('hidden');
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-
-  function ensureAuthBack(){
-    const card=document.querySelector('#authScreen .auth-card');
-    if(!card)return;
-    let b=$('lunduyanAuthBack');
-    if(!b){
-      b=document.createElement('button');b.id='lunduyanAuthBack';b.type='button';b.className='auth-back-btn';b.textContent='← Back to LUNDUYAN home';
-      b.addEventListener('click',authBack);card.insertBefore(b,card.firstChild);
-    }
-  }
-
-  function ensureProfileLogout(){
-    const modal=$('myProfileModal'),box=$('myProfileContent');
-    if(!modal||!box)return;
-    let b=$('lunduyanProfileLogout');
-    if(!b){
-      b=document.createElement('button');b.id='lunduyanProfileLogout';b.type='button';b.className='danger-btn';b.textContent='🚪 Logout';
-      b.style.cssText='width:100%;min-height:46px;margin-top:12px;';
-      b.onclick=async()=>{if(!confirm('Are you sure you want to log out?'))return;try{if(typeof logout==='function')await logout();else await window.supabaseClient.auth.signOut();}catch(e){alert(e.message||e);}};
-      box.appendChild(b);
-    }
-  }
-
-  function ensureMessageClose(){
-    const modal=$('chatModal');if(!modal)return;
-    const header=modal.querySelector('.chat-header');if(!header)return;
-    let b=header.querySelector('.close');
-    if(!b){
-      b=document.createElement('button');b.type='button';b.className='close';header.appendChild(b);
-    }
-    b.textContent=modal.classList.contains('chat-has-selection')?'←':'×';
-    b.title=modal.classList.contains('chat-has-selection')?'Back to conversations':'Close Messages';
-    b.setAttribute('aria-label',b.title);
-    b.onclick=function(e){
-      e.preventDefault();e.stopImmediatePropagation();
-      if(modal.classList.contains('chat-has-selection')){
-        modal.classList.remove('chat-has-selection');
-        $('chatWindow')?.classList.remove('active');
-        const name=$('chatUserName');if(name){name.textContent='Select a conversation';name.classList.remove('chat-user-clickable');name.removeAttribute('data-user-id');}
-        const box=$('chatMessages');if(box)box.innerHTML='<div class="chat-empty">Select a conversation to start chatting.</div>';
-        try{window.currentConversation=null;}catch(_){ }
-      }else{
-        modal.classList.add('hidden');
-        if(typeof closeChat==='function')try{closeChat();}catch(_){ }
-      }
-    };
-  }
-
-  function wireMobileMarket(){
-    const nav=$('mobileBottomNav');if(!nav||nav.dataset.v2Market==='1')return;
-    nav.dataset.v2Market='1';
-    nav.addEventListener('click',async e=>{
-      const b=e.target.closest('[data-mobile-nav="market"]');if(!b)return;
-      e.preventDefault();
-      const target=$('products');
-      try{if(typeof loadProducts==='function')await loadProducts();}catch(_){ }
-      requestAnimationFrame(()=>target?.scrollIntoView({behavior:'smooth',block:'start'}));
-    },true);
-  }
-
-  function boot(){ensureAuthBack();ensureProfileLogout();ensureMessageClose();wireMobileMarket();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,100));else setTimeout(boot,100);
-  setInterval(boot,1200);
-})();
-</script>
-
 <style id="LUNDUYAN_AGGREGATION_LAYOUT_FIX">
 /* Community pools belong in the main marketplace flow, not at the page tail. */
 #aggregationSection{scroll-margin-top:90px;}
@@ -12187,7 +11923,7 @@ window.__setLunduAIbusy=function(v){
       actions.className='lunduyan-profile-actions';
       actions.innerHTML=`
         <button type="button" class="lunduyan-feedback-btn" onclick="openModerationFeedback('FEEDBACK')">💡 Feedback / Help</button>
-        <button type="button" class="lunduyan-logout-btn" onclick="logout()">↪ Logout</button>`;
+        `;
       box.appendChild(actions);
     }
     if(['MODERATOR','ADMIN'].includes(role()) && !box.querySelector('.lunduyan-moderator-btn')){
@@ -12410,62 +12146,215 @@ window.__setLunduAIbusy=function(v){
   .lunduyan-profile-actions{grid-template-columns:1fr!important}
 }
 </style>
-<script id="LUNDUYAN-FINAL-STABILITY-JS">
+
+
+<!-- =========================================================
+ LUNDUYAN FINAL V10 — STABLE UI / ONE LOGOUT / BLACK CLOSE
+ ========================================================= -->
+<style id="LUNDUYAN-FINAL-V10-UI">
+/* Every close control is deliberately high-contrast black. */
+.modal .close,
+.bot-window .close,
+.chat-contacts-close,
+.chat-header .close,
+.profile-modal-header .close,
+#myProfileModal .close,
+#chatModal .close,
+#botWindow .close,
+#moderationFeedbackModal .close,
+#moderatorInboxModal .close{
+  background:#111!important;
+  color:#fff!important;
+  border:2px solid #111!important;
+  box-shadow:0 3px 10px rgba(0,0,0,.18)!important;
+  width:42px!important;height:42px!important;
+  min-width:42px!important;min-height:42px!important;
+  border-radius:50%!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:24px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  opacity:1!important;
+}
+.modal .close:hover,
+.bot-window .close:hover,
+.chat-contacts-close:hover,
+.chat-header .close:hover{
+  background:#000!important;
+  color:#fff!important;
+  transform:translateY(-1px);
+}
+/* There is NEVER a top-nav Logout. */
+.nav-logout-btn{display:none!important}
+/* Profile is the only place with Logout. */
+#myProfileModal .lunduyan-profile-actions .lunduyan-logout-btn{
+  display:flex!important;
+  width:100%!important;
+  min-height:48px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:#111!important;
+  color:#fff!important;
+  border:1px solid #111!important;
+  border-radius:13px!important;
+  font-weight:900!important;
+}
+#myProfileModal{
+  overflow:hidden!important;
+  overscroll-behavior:contain!important;
+}
+#myProfileModal>.modal-card{
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  max-height:calc(100dvh - 20px)!important;
+}
+#myProfileContent{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  padding-bottom:48px!important;
+}
+/* Aggregation creator form: no Needed-by calendar. */
+#aggregationRequestModal #aggNeededBy,
+#aggregationRequestModal label[for="aggNeededBy"],
+#aggregationRequestModal .agg-needed-by,
+#aggregationRequestModal [data-field="needed-by"]{
+  display:none!important;
+}
+@media(max-width:700px){
+  #myProfileModal{padding:0!important}
+  #myProfileModal>.modal-card{
+    width:100%!important;height:100dvh!important;max-height:100dvh!important;
+    border-radius:0!important;
+  }
+  #myProfileContent{padding:16px 16px 56px!important}
+  .lunduyan-profile-actions{grid-template-columns:1fr!important}
+}
+/* AI: keep the input/send row fixed and usable. */
+#botWindow .bot-input{
+  position:sticky!important;
+  bottom:0!important;
+  z-index:5!important;
+  background:#fff!important;
+}
+#botWindow .bot-input input:disabled,
+#botWindow .bot-input button:disabled{opacity:.55!important;cursor:not-allowed!important}
+</style>
+
+<script id="LUNDUYAN-FINAL-V10-UI-JS">
 (function(){
   'use strict';
+  if(window.__LUNDUYAN_V10_UI__) return;
+  window.__LUNDUYAN_V10_UI__=true;
   const $=id=>document.getElementById(id);
-  const modalIds=['chatModal','myProfileModal','profileModal','productModal','buyModal','reviewModal','aggregationRequestModal','aggregationContributionModal','blockedAccountsModal','moderationFeedbackModal','moderatorInboxModal'];
-  function closeAll(except){
-    modalIds.forEach(id=>{if(id!==except)$(id)?.classList.add('hidden')});
-    $('notificationPanel')?.classList.add('hidden');
-    if(except!=='botWindow')$('botWindow')?.classList.add('hidden');
-    if(typeof setModalScrollLock==='function')setModalScrollLock(!!document.querySelector('.modal:not(.hidden)'));
+
+  /* ---------- one and only one Logout ---------- */
+  function isLogoutButton(b){
+    return /(^|\s)logout(\s|$)/i.test((b?.textContent||'').trim());
   }
-  window.__LUNDUYAN_CLOSE_ALL_OVERLAYS=closeAll;
-  function wrap(name,id){
-    const fn=window[name]; if(typeof fn!=='function'||fn.__lunduExclusive)return;
-    const w=function(){
-      closeAll(id);
-      return fn.apply(this,arguments);
-    };
-    w.__lunduExclusive=true; window[name]=w;
-  }
-  function boot(){
-    ['openChat','openMyProfile','openFarmerProfile','openUserProfile','openBuyModal','openAddProduct','openAggregationRequest','openAggregationContribution','openBlockedAccounts','openModerationFeedback','openModeratorInbox'].forEach((n)=>{
-      const map={openChat:'chatModal',openMyProfile:'myProfileModal',openFarmerProfile:'profileModal',openUserProfile:'profileModal',openBuyModal:'buyModal',openAddProduct:'productModal',openAggregationRequest:'aggregationRequestModal',openAggregationContribution:'aggregationContributionModal',openBlockedAccounts:'blockedAccountsModal',openModerationFeedback:'moderationFeedbackModal',openModeratorInbox:'moderatorInboxModal'};
-      wrap(n,map[n]);
+  function ensureSingleProfileLogout(){
+    const box=$('myProfileContent');
+    if(!box)return;
+
+    // Delete any logout outside Profile.
+    document.querySelectorAll('button,.btn,a').forEach(b=>{
+      if(!isLogoutButton(b))return;
+      if(!b.closest('#myProfileModal')) b.remove();
     });
-    /* Keep exactly one visible modal if legacy code opens several in sequence. */
-    const observer=new MutationObserver(()=>{
-      const open=[...document.querySelectorAll('.modal:not(.hidden)')];
-      if(open.length>1){
-        const keep=open[open.length-1];
-        open.slice(0,-1).forEach(m=>m.classList.add('hidden'));
-        if(typeof setModalScrollLock==='function')setModalScrollLock(true);
+
+    let buttons=[...box.querySelectorAll('button')].filter(isLogoutButton);
+    if(buttons.length>1) buttons.slice(1).forEach(b=>b.remove());
+
+    let b=buttons[0];
+    let actions=box.querySelector('.lunduyan-profile-actions');
+    if(!actions){
+      actions=document.createElement('div');
+      actions.className='lunduyan-profile-actions';
+      box.appendChild(actions);
+    }
+    if(!b){
+      b=document.createElement('button');
+      b.type='button';
+      b.className='lunduyan-logout-btn';
+      b.textContent='↪ Logout';
+      actions.appendChild(b);
+    }else if(b.parentElement!==actions){
+      actions.appendChild(b);
+    }
+    b.classList.add('lunduyan-logout-btn');
+    b.type='button';
+    b.onclick=async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(window.__lunduyanLoggingOut)return;
+      if(!confirm('Are you sure you want to log out?'))return;
+      window.__lunduyanLoggingOut=true;
+      try{
+        if(typeof window.logout==='function') await window.logout();
+        else if(window.supabaseClient?.auth) await window.supabaseClient.auth.signOut();
+      }catch(err){
+        console.error('Logout:',err);
+        alert(err?.message||'Unable to log out.');
+        window.__lunduyanLoggingOut=false;
+      }
+    };
+  }
+
+  function removeAggregationDate(){
+    const ids=['aggNeededBy','aggregationNeededBy','neededBy'];
+    ids.forEach(id=>{
+      const x=$(id);
+      if(x){
+        const row=x.closest('label,div,section');
+        if(row && row!==x.parentElement) row.remove();
+        else x.remove();
       }
     });
-    document.querySelectorAll('.modal').forEach(m=>observer.observe(m,{attributes:true,attributeFilter:['class']}));
-    /* Remove any legacy aggregation date field that another script tries to recreate. */
-    const stripDate=()=>{
-      const x=$('aggNeededBy');
-      if(x){ const holder=x.closest('div'); holder?.remove(); x.remove(); }
-    };
-    stripDate(); setTimeout(stripDate,250); setTimeout(stripDate,1000);
-    /* Convert every legacy user_reports report action to the working moderator queue. */
-    if(typeof window.reportUser==='function' && !window.reportUser.__lunduPatched){
-      const original=window.reportUser;
-      window.reportUser=async function(otherId,otherName){
-        const p=window.currentProfile || (typeof currentProfile!=='undefined'?currentProfile:null);
-        if(!p)return;
-        const reason=prompt(`Why are you reporting ${otherName||'this account'}?`); if(reason===null)return;
-        const details=prompt('Optional details:')||'';
-        const {error}=await supabaseClient.from('moderator_feedback').insert({sender_id:String(p.id),subject:'Account report: '+String(otherName||otherId),message:details.trim()||'No additional details provided.',category:'REPORT',reported_account:String(otherId),reason:reason.trim()||'Other',status:'OPEN'});
-        if(error)alert('Unable to submit report: '+error.message); else alert('Report sent to LUNDUYAN moderators.');
-      };
-      window.reportUser.__lunduPatched=true;
-    }
+    document.querySelectorAll('#aggregationRequestModal label').forEach(l=>{
+      if(/needed\s*by/i.test(l.textContent||'')) l.closest('div')?.remove() || l.remove();
+    });
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,900));else setTimeout(boot,900);
+
+  function syncCloseButtons(){
+    document.querySelectorAll('.modal .close,.bot-window .close,.chat-contacts-close,.chat-header .close').forEach(b=>{
+      b.style.setProperty('background','#111','important');
+      b.style.setProperty('color','#fff','important');
+      b.style.setProperty('border','2px solid #111','important');
+      b.style.setProperty('opacity','1','important');
+    });
+  }
+
+  function boot(){
+    ensureSingleProfileLogout();
+    removeAggregationDate();
+    syncCloseButtons();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,250));
+  else setTimeout(boot,250);
+
+  // Profile content is dynamically rendered; clean it whenever it changes.
+  let cleaning=false;
+  const cleanOnce=()=>{
+    if(cleaning)return;
+    cleaning=true;
+    try{boot()}finally{setTimeout(()=>{cleaning=false},0)}
+  };
+  const startObs=()=>{
+    const box=$('myProfileContent');
+    if(box){
+      const obs=new MutationObserver(cleanOnce);
+      obs.observe(box,{childList:true,subtree:true});
+    }
+  };
+  setTimeout(startObs,700);
+
+  // Clean after profile open and after any legacy renderer has run.
+  [1200,2000,3500,5000].forEach(ms=>setTimeout(boot,ms));
 })();
 </script>
 
