@@ -11914,5 +11914,283 @@ window.__setLunduAIbusy=function(v){
 })();
 </script>
 
+
+
+<!-- =======================================================
+ LUNDUYAN V9 — UX / PROFILE / MODERATION POLISH
+ ======================================================= -->
+<style id="LUNDUYAN_V9_POLISHED_UX">
+  /* ---------- universal panel discipline ---------- */
+  body.lunduyan-panel-open{overflow:hidden!important}
+  .modal{padding:clamp(10px,2vw,24px)!important;box-sizing:border-box!important}
+  .modal-card{box-sizing:border-box!important;box-shadow:0 24px 70px rgba(11,35,21,.22)!important}
+
+  /* ---------- My Profile: always reachable logout ---------- */
+  #myProfileModal{align-items:center!important;justify-content:center!important}
+  #myProfileModal .modal-card{
+    width:min(700px,100%)!important;
+    max-width:700px!important;
+    height:min(760px,calc(100dvh - 24px))!important;
+    max-height:calc(100dvh - 24px)!important;
+    padding:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+    border-radius:24px!important;
+  }
+  #myProfileModal .modal-header{
+    flex:0 0 auto!important;margin:0!important;padding:18px 20px!important;
+    background:linear-gradient(135deg,#f5fbf7,#fff)!important;
+    border-bottom:1px solid #e1ebe4!important;position:sticky!important;top:0!important;z-index:3!important;
+  }
+  #myProfileContent{
+    flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;padding:18px 20px 28px!important;
+    overscroll-behavior:contain!important;
+  }
+  #myProfileContent form{min-height:100%;display:flex;flex-direction:column;gap:14px}
+  #myProfileContent .profile-edit-grid{flex:0 0 auto}
+  .lunduyan-profile-actions{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:10px}
+  .lunduyan-profile-actions button{min-height:48px!important;border-radius:14px!important;font-weight:900!important}
+  .lunduyan-logout-btn{background:#fff1f1!important;color:#b42318!important;border:1px solid #f2c7c7!important}
+  .lunduyan-help-btn{background:#eef8f1!important;color:#176b35!important;border:1px solid #cde7d4!important}
+  @media(max-width:600px){
+    #myProfileModal .modal-card{height:calc(100dvh - 10px)!important;max-height:calc(100dvh - 10px)!important;border-radius:20px!important}
+    #myProfileContent{padding:14px 14px 26px!important}
+    .lunduyan-profile-actions{grid-template-columns:1fr}
+  }
+
+  /* ---------- Feedback / moderation UI ---------- */
+  #lunduyanFeedbackModal .modal-card,#lunduyanModeratorModal .modal-card{width:min(760px,100%);max-width:760px;padding:0;overflow:hidden}
+  .lunduyan-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid #e3ebe5;background:linear-gradient(135deg,#f5fbf7,#fff)}
+  .lunduyan-dialog-head h2{margin:0;font-size:20px}
+  .lunduyan-dialog-sub{margin:4px 0 0;color:#6b786f;font-size:12px}
+  .lunduyan-dialog-body{padding:20px;max-height:calc(100dvh - 150px);overflow:auto;-webkit-overflow-scrolling:touch}
+  .lunduyan-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .lunduyan-form-grid .full{grid-column:1/-1}
+  .lunduyan-form-grid label{display:block;font-size:12px;font-weight:900;color:#34443b;margin-bottom:6px}
+  .lunduyan-form-grid input,.lunduyan-form-grid select,.lunduyan-form-grid textarea{width:100%;box-sizing:border-box;border:1px solid #d5e1d9;border-radius:13px;padding:12px 13px;background:#fff;font:inherit;outline:none}
+  .lunduyan-form-grid textarea{min-height:120px;resize:vertical}
+  .lunduyan-form-grid input:focus,.lunduyan-form-grid select:focus,.lunduyan-form-grid textarea:focus{border-color:#36a85b;box-shadow:0 0 0 4px rgba(54,168,91,.10)}
+  .lunduyan-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .lunduyan-dialog-actions button{min-height:44px;padding:10px 16px;border-radius:12px;font-weight:900}
+  .lunduyan-ticket{border:1px solid #dfe9e3;border-radius:16px;padding:14px;background:#fff;margin-bottom:10px}
+  .lunduyan-ticket-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .lunduyan-ticket-title{font-weight:900}.lunduyan-ticket-meta{font-size:11px;color:#758078;margin-top:3px}.lunduyan-ticket-body{margin-top:9px;line-height:1.5;font-size:13px;color:#34443b}
+  .lunduyan-ticket-status{font-size:10px;font-weight:900;border-radius:999px;padding:6px 9px;background:#eef8f1;color:#176b35;white-space:nowrap}
+  .lunduyan-ticket-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .lunduyan-ticket-actions button{border:1px solid #d5e1d9;background:#fff;border-radius:10px;padding:8px 10px;font-weight:800;cursor:pointer}
+  .lunduyan-message-report{border:0;background:transparent;color:#9a5a12;font-size:10px;font-weight:800;margin-left:7px;padding:2px 4px;cursor:pointer}
+  .lunduyan-message-report:hover{text-decoration:underline}
+  @media(max-width:600px){.lunduyan-form-grid{grid-template-columns:1fr}.lunduyan-form-grid .full{grid-column:auto}.lunduyan-dialog-body{padding:14px;max-height:calc(100dvh - 120px)}}
+
+  /* ---------- Chat polish ---------- */
+  #chatModal .chat-layout{min-height:0!important}
+  #chatModal .conversation-list,#chatModal .chat-window{min-height:0!important}
+  #chatModal .chat-input{position:relative!important;z-index:5!important}
+  #chatModal .chat-input input{font-size:16px!important}
+  #chatModal .chat-input button{border-radius:12px!important;font-weight:900!important}
+  @media(max-width:700px){
+    #chatModal{bottom:calc(72px + env(safe-area-inset-bottom))!important;height:auto!important;max-height:none!important}
+    #chatModal .modal-card{height:100%!important;max-height:none!important}
+  }
+
+  /* ---------- Cleaner app chrome ---------- */
+  .nav-actions .secondary-btn,.nav-actions .danger-btn{transition:transform .15s ease,box-shadow .15s ease}
+  .nav-actions .secondary-btn:hover,.nav-actions .danger-btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(18,58,32,.10)}
+</style>
+
+<script id="LUNDUYAN_V9_UX_JS">
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const esc=v=>typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const profile=()=> (typeof currentProfile!=='undefined'&&currentProfile) ? currentProfile : window.currentProfile;
+  const role=()=>String(profile()?.role||'').toUpperCase();
+  const isMod=()=>role()==='MODERATOR'||role()==='ADMIN';
+
+  function hide(id){$(id)?.classList.add('hidden')}
+  function show(id){$(id)?.classList.remove('hidden')}
+  function closePanels(except){
+    document.querySelectorAll('.modal').forEach(m=>{if(m.id!==except)m.classList.add('hidden')});
+    hide('notificationPanel');
+    hide('botWindow');
+    document.body.classList.toggle('lunduyan-panel-open',!!except);
+  }
+  window.lunduyanClosePanels=closePanels;
+
+  /* 1 BUTTON / 1 PANEL: nav clicks close everything before opening the target. */
+  document.addEventListener('click',function(e){
+    const b=e.target.closest('[data-mobile-nav],.nav-actions button');
+    if(!b)return;
+    /* Let the target's existing handler run after we clear other panels. */
+    closePanels();
+    setTimeout(()=>document.body.classList.remove('lunduyan-panel-open'),0);
+  },true);
+
+  /* Modal backdrop click closes the active modal. */
+  document.addEventListener('click',function(e){
+    const m=e.target.closest('.modal');
+    if(m && e.target===m){m.classList.add('hidden');document.body.classList.remove('lunduyan-panel-open');}
+  });
+
+  /* Ensure profile is a real scroll container with a permanently reachable footer. */
+  function profileModalPolish(){
+    const m=$('myProfileModal'),c=$('myProfileContent');
+    if(!m||!c)return;
+    c.style.overflowY='auto'; c.style.webkitOverflowScrolling='touch';
+  }
+
+  /* ---------- Feedback / report modal ---------- */
+  function ensureFeedbackModal(){
+    if($('lunduyanFeedbackModal'))return;
+    const m=document.createElement('div');m.className='modal hidden';m.id='lunduyanFeedbackModal';
+    m.innerHTML=`<div class="modal-card">
+      <div class="lunduyan-dialog-head"><div><h2>Feedback & Report</h2><p class="lunduyan-dialog-sub">Send feedback or report a safety/content issue to LUNDUYAN moderators.</p></div><button type="button" class="close" aria-label="Close" data-close-feedback>×</button></div>
+      <div class="lunduyan-dialog-body"><form id="lunduyanFeedbackForm" class="lunduyan-form-grid">
+        <div><label>Type</label><select id="lunduyanTicketType"><option value="FEEDBACK">Feedback / Suggestion</option><option value="REPORT_USER">Report a user</option><option value="REPORT_CONTENT">Report content / message</option><option value="BUG">Report a bug</option></select></div>
+        <div><label>Category</label><select id="lunduyanTicketCategory"><option>General</option><option>Safety</option><option>Harassment</option><option>Spam</option><option>Scam / Fraud</option><option>Inappropriate Content</option><option>Technical Issue</option><option>Other</option></select></div>
+        <div class="full"><label>Subject</label><input id="lunduyanTicketSubject" maxlength="120" required placeholder="What happened or what should we improve?"></div>
+        <div class="full"><label>Details</label><textarea id="lunduyanTicketDetails" maxlength="2000" required placeholder="Give the moderators enough detail to understand the issue."></textarea></div>
+        <div class="full" id="lunduyanTicketStatus"></div>
+        <div class="full lunduyan-dialog-actions"><button type="button" class="secondary-btn" data-close-feedback>Cancel</button><button class="hero-primary" type="submit">Send to Moderators</button></div>
+      </form></div></div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click',e=>{if(e.target.closest('[data-close-feedback]')){hide(m.id);document.body.classList.remove('lunduyan-panel-open')}});
+    $('lunduyanFeedbackForm').addEventListener('submit',submitTicket);
+  }
+  async function submitTicket(e){
+    e.preventDefault();
+    const p=profile(); if(!p){return;}
+    const status=$('lunduyanTicketStatus');
+    const btn=e.target.querySelector('button[type="submit"]');
+    if(btn)btn.disabled=true;
+    if(status)status.innerHTML='<div class="message">Sending securely to moderators…</div>';
+    const payload={reporter_id:String(p.id),type:$('lunduyanTicketType').value,category:$('lunduyanTicketCategory').value,subject:$('lunduyanTicketSubject').value.trim(),description:$('lunduyanTicketDetails').value.trim(),status:'PENDING'};
+    const {error}=await supabaseClient.from('moderator_tickets').insert(payload);
+    if(error){
+      if(status)status.innerHTML=`<div class="message error">${esc(error.message)}<br><small>If this says the table is missing, run the supplied V9 SQL once in Supabase SQL Editor.</small></div>`;
+      if(btn)btn.disabled=false;return;
+    }
+    if(status)status.innerHTML='<div class="message success">Sent! Your report/feedback is now in the moderator queue.</div>';
+    e.target.reset();
+    setTimeout(()=>{hide('lunduyanFeedbackModal');document.body.classList.remove('lunduyan-panel-open')},900);
+    if(btn)btn.disabled=false;
+  }
+  window.openLUNDUYANFeedback=function(prefill={}){
+    closePanels('lunduyanFeedbackModal');ensureFeedbackModal();show('lunduyanFeedbackModal');document.body.classList.add('lunduyan-panel-open');
+    if(prefill.type&&$('lunduyanTicketType'))$('lunduyanTicketType').value=prefill.type;
+    if(prefill.category&&$('lunduyanTicketCategory'))$('lunduyanTicketCategory').value=prefill.category;
+    if(prefill.subject&&$('lunduyanTicketSubject'))$('lunduyanTicketSubject').value=prefill.subject;
+    if(prefill.details&&$('lunduyanTicketDetails'))$('lunduyanTicketDetails').value=prefill.details;
+  };
+
+  /* ---------- Moderator inbox ---------- */
+  async function openModeratorPanel(){
+    if(!isMod()){window.openLUNDUYANFeedback();return;}
+    closePanels('lunduyanModeratorModal');
+    let m=$('lunduyanModeratorModal');
+    if(!m){
+      m=document.createElement('div');m.className='modal hidden';m.id='lunduyanModeratorModal';
+      m.innerHTML=`<div class="modal-card"><div class="lunduyan-dialog-head"><div><h2>Moderator Center</h2><p class="lunduyan-dialog-sub">Review user feedback and safety reports.</p></div><button type="button" class="close" data-close-mod>×</button></div><div class="lunduyan-dialog-body"><div id="lunduyanModeratorList">Loading reports…</div></div></div>`;
+      document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target.closest('[data-close-mod]')){hide(m.id);document.body.classList.remove('lunduyan-panel-open')}});
+    }
+    show('lunduyanModeratorModal');document.body.classList.add('lunduyan-panel-open');
+    await loadModeratorTickets();
+  }
+  async function loadModeratorTickets(){
+    const box=$('lunduyanModeratorList');if(!box)return;
+    const {data,error}=await supabaseClient.from('moderator_tickets').select('*, reporter:reporter_id(full_name,role)').order('created_at',{ascending:false}).limit(100);
+    if(error){box.innerHTML=`<div class="message error">${esc(error.message)}</div>`;return;}
+    if(!data?.length){box.innerHTML='<div class="empty">No moderator reports yet.</div>';return;}
+    box.innerHTML=data.map(t=>`<div class="lunduyan-ticket"><div class="lunduyan-ticket-top"><div><div class="lunduyan-ticket-title">${esc(t.subject||t.type||'Report')}</div><div class="lunduyan-ticket-meta">${esc(t.type||'')} · ${esc(t.category||'')} · ${esc(t.reporter?.full_name||'User')} · ${new Date(t.created_at).toLocaleString('en-PH')}</div></div><span class="lunduyan-ticket-status">${esc(t.status||'PENDING')}</span></div><div class="lunduyan-ticket-body">${esc(t.description||'')}</div><div class="lunduyan-ticket-actions"><button type="button" data-ticket-id="${esc(t.id)}" data-ticket-status="IN_REVIEW">Mark in review</button><button type="button" data-ticket-id="${esc(t.id)}" data-ticket-status="RESOLVED">Resolve</button><button type="button" data-ticket-id="${esc(t.id)}" data-ticket-status="DISMISSED">Dismiss</button></div></div>`).join('');
+    box.querySelectorAll('[data-ticket-id]').forEach(b=>b.addEventListener('click',()=>updateTicket(b.dataset.ticketId,b.dataset.ticketStatus)));
+  }
+  async function updateTicket(id,status){
+    const note=prompt('Optional moderator note:')||null;
+    const {error}=await supabaseClient.from('moderator_tickets').update({status,moderator_note:note}).eq('id',id);
+    if(error){alert(error.message);return;}await loadModeratorTickets();
+  }
+
+  /* ---------- Profile replacement with fixed scrolling + logout + help ---------- */
+  const originalOpenProfile=window.openMyProfile;
+  window.openMyProfile=async function(){
+    if(!profile())return;
+    closePanels('myProfileModal');
+    const modal=$('myProfileModal'),box=$('myProfileContent');if(!modal||!box)return;
+    show('myProfileModal');document.body.classList.add('lunduyan-panel-open');
+    const p=profile();
+    box.innerHTML=`<form onsubmit="saveMyProfile(event)">
+      <div class="profile-edit-grid">
+        <div class="full"><label>Full Name</label><input id="editFullName" required value="${esc(p.full_name||'')}"></div>
+        <div><label>Location</label><input id="editLocation" value="${esc(p.location||'')}" placeholder="City / Province"></div>
+        <div><label>Contact Number</label><input id="editPhone" value="${esc(p.phone||'')}" placeholder="09... or +63..."></div>
+        <div class="full"><label>Bio / About</label><textarea id="editBio" maxlength="500" placeholder="Tell people about yourself...">${esc(p.bio||'')}</textarea></div>
+      </div>
+      <button class="primary-btn" type="submit">Save Profile Changes</button>
+      <div id="profileEditMessage"></div>
+      <div class="lunduyan-profile-actions">
+        <button class="lunduyan-help-btn" type="button" onclick="openLUNDUYANFeedback()">💬 Feedback / Report</button>
+        ${isMod()?'<button type="button" class="secondary-btn" onclick="openLUNDUYANModerator()">🛡 Moderator Center</button>':'<button type="button" class="secondary-btn" onclick="closeMyProfile();openLUNDUYANFeedback({type:\'FEEDBACK\'})">💡 Help / Suggestion</button>'}
+        <button class="lunduyan-logout-btn" type="button" onclick="logout()">↪ Logout</button>
+      </div>
+    </form>`;
+    profileModalPolish();
+    box.scrollTop=0;
+  };
+  window.openLUNDUYANModerator=openModeratorPanel;
+
+  /* ---------- Message report action ---------- */
+  async function reportMessage(message){
+    const p=profile();if(!p||!message?.id)return;
+    const reason=prompt('Why are you reporting this message? Examples: harassment, scam, spam, inappropriate content, or other.');
+    if(reason===null)return;
+    const clean=reason.trim()||'Other';
+    const details=prompt('Optional additional details:')||'';
+    const {error}=await supabaseClient.from('moderator_tickets').insert({reporter_id:String(p.id),type:'REPORT_CONTENT',category:clean,subject:'Reported chat message',description:`Message: ${String(message.content||'').slice(0,1000)}\n\nDetails: ${details.trim()}`,status:'PENDING',conversation_id:message.conversation_id,message_id:message.id,reported_user_id:message.sender_id});
+    if(error){alert(error.message);return;}alert('Report sent to LUNDUYAN moderators.');
+  }
+  window.reportLUNDUYANMessage=reportMessage;
+
+  /* Replace renderMessage so every incoming message has a discreet report action. */
+  if(typeof renderMessage==='function'){
+    window.__lunduOriginalRenderMessage=renderMessage;
+    renderMessage=function(message){
+      const mine=String(message.sender_id)===String(profile()?.id);
+      const time=message.created_at?new Date(message.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+      return `<div class="message-row ${mine?'mine':''}" id="message-${esc(message.id)}"><div class="chat-bubble"><div>${esc(message.content)}</div><div class="chat-time">${time}${mine?`<button class="message-delete" onclick="deleteMessage('${esc(message.id)}')">Delete</button>`:`<button type="button" class="lunduyan-message-report" onclick='reportLUNDUYANMessage(${JSON.stringify({id:String(message.id),conversation_id:String(message.conversation_id),sender_id:String(message.sender_id),content:String(message.content||'')}).replace(/</g,'\\u003c')})'>🚩 Report</button>`}</div></div></div>`;
+    };
+  }
+
+  /* Fix chat state class and prevent legacy scripts from disabling navigation. */
+  function syncChat(){
+    const m=$('chatModal');if(!m)return;
+    const selected=!!(typeof currentConversation!=='undefined'&&currentConversation);
+    m.classList.toggle('chat-has-selection',selected);
+    const input=$('chatInput');if(input){input.disabled=false;input.removeAttribute('disabled')}
+    const form=$('chatForm');if(form){form.style.display='flex';form.style.visibility='visible'}
+    const nav=$('mobileBottomNav');if(nav)nav.style.pointerEvents='auto';
+  }
+  window.lunduSyncChat=syncChat;
+
+  /* Close helpers should always release scroll lock. */
+  ['closeMyProfile','closeChat','closeBlockedAccounts','closeAddProduct','closeAggregationRequest','closeAggregationContribution','closeReviewModal','closeProfile'].forEach(fn=>{
+    if(typeof window[fn]==='function'){
+      const old=window[fn];window[fn]=function(){try{return old.apply(this,arguments)}finally{document.body.classList.remove('lunduyan-panel-open')}};
+    }
+  });
+
+  function boot(){
+    ensureFeedbackModal();profileModalPolish();syncChat();
+    /* If the legacy V8 code disabled the nav while chat is open, undo it. */
+    const nav=$('mobileBottomNav');if(nav)nav.style.pointerEvents='auto';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,150));else setTimeout(boot,150);
+  setInterval(()=>{profileModalPolish();syncChat()},700);
+})();
+</script>
+
+<!-- LUNDUYAN V9 SQL is supplied as a separate file; run it once in Supabase SQL Editor. -->
+
 </body>
 </html>
