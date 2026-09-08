@@ -10408,9 +10408,42 @@ setTimeout(run,700);
   const $=id=>document.getElementById(id);
   const esc=v=>typeof escapeHtml==='function'?escapeHtml(v??''):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money=v=>typeof formatMoney==='function'?formatMoney(v):Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const getLunduProfile=()=>window.currentProfile || (typeof currentProfile!=='undefined' ? currentProfile : null) || null;
-  const role=()=>String(getLunduProfile()?.role || getLunduProfile()?.user_role || '').trim().toUpperCase();
+  const getLunduProfile=()=>{
+    try{
+      if(window.currentProfile) return window.currentProfile;
+      if(typeof currentProfile!=='undefined' && currentProfile) return currentProfile;
+    }catch(_){}
+    return null;
+  };
+  const normalizedRole=p=>String(p?.role || p?.user_role || p?.account_role || '').trim().toUpperCase();
+  const role=()=>normalizedRole(getLunduProfile());
   const isFarmer=()=>role()==='FARMER';
+
+  async function resolveAggregationProfile(){
+    let p=getLunduProfile();
+    if(normalizedRole(p)) return p;
+    try{
+      const sb=window.supabaseClient || (typeof supabaseClient!=='undefined' ? supabaseClient : null);
+      const sessionResult=await sb?.auth?.getSession?.();
+      const user=sessionResult?.data?.session?.user;
+      if(!user) return p;
+      const meta=user.user_metadata || {};
+      if(normalizedRole(meta)){
+        p={...(p||{}),...meta};
+        window.currentProfile=p;
+        return p;
+      }
+      if(sb){
+        let q=await sb.from('users').select('*').eq('auth_user_id',user.id).maybeSingle();
+        if(!q?.data) q=await sb.from('users').select('*').eq('id',user.id).maybeSingle();
+        if(q?.data){
+          p={...(p||{}),...q.data};
+          window.currentProfile=p;
+        }
+      }
+    }catch(err){console.warn('LUNDUYAN aggregation role lookup:',err)}
+    return p;
+  }
 
   function updateRoleUI(){
     const btn=$('createAggregationBtn');
@@ -10429,8 +10462,9 @@ setTimeout(run,700);
     return data;
   }
 
-  window.openAggregationRequest=function(){
-    if(!isFarmer()){alert('Only farmers can create a community pool. Buyers can purchase completed pools.');return;}
+  window.openAggregationRequest=async function(){
+    const p=await resolveAggregationProfile();
+    if(normalizedRole(p)!=='FARMER'){alert('Only farmers can create a community pool. Buyers can purchase completed pools.');return;}
     $('aggregationRequestModal')?.classList.remove('hidden');
     if(typeof setModalScrollLock==='function')setModalScrollLock(true);
   };
@@ -10462,7 +10496,7 @@ setTimeout(run,700);
   async function loadAggregations(){
     const grid=$('aggregationGrid');
     updateRoleUI();
-    if(!grid||!window.currentProfile||!window.supabaseClient)return;
+    if(!grid||!getLunduProfile()||!window.supabaseClient)return;
     grid.innerHTML='<div class="aggregation-empty">Loading farmer community pools...</div>';
 
     const {data,error}=await supabaseClient
@@ -10530,7 +10564,7 @@ setTimeout(run,700);
       const contributorsHtml=contributors.map(c=>`<div class="aggregation-contributor"><span>👨‍🌾 ${esc(c.farmer?.full_name||'Farmer')}</span><span>${esc(c.quantity)} ${esc(r.unit)}</span></div>`).join('');
       const creatorId=String(r.creator_id||'');
       const creatorName=String(r.creator?.full_name||'Farmer');
-      const reportCreator=(creatorId && creatorId!==String(window.currentProfile?.id||''))?`<button type="button" class="aggregation-report-btn" onclick="reportUser('${esc(creatorId)}','${esc(creatorName).replaceAll("'","&#39;")}')">⚑ Report pool creator</button>`:'';
+      const reportCreator=(creatorId && creatorId!==String(getLunduProfile()?.id||''))?`<button type="button" class="aggregation-report-btn" onclick="reportUser('${esc(creatorId)}','${esc(creatorName).replaceAll("'","&#39;")}')">⚑ Report pool creator</button>`:'';
       return `<article class="aggregation-card"><div class="aggregation-card-top"><div><div class="aggregation-product">🌾 ${esc(String(r.product_name||'').toUpperCase())} COMMUNITY POOL</div><div class="aggregation-meta">Created by: ${esc(creatorName)} · ${esc(r.location||'Location not set')}</div></div><span class="aggregation-status ${statusClass}">${esc(status.replaceAll('_',' '))}</span></div><div class="aggregation-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${esc(target)}" aria-valuenow="${esc(total)}"><span style="width:${pct}%"></span></div><div class="aggregation-numbers"><strong>${esc(total)} / ${esc(target)} ${esc(r.unit)}</strong><span>${esc(remaining)} ${esc(r.unit)} remaining</span></div><div class="aggregation-pool-stats"><span>👨‍🌾 <b>${contributorCount}</b> farmer${contributorCount===1?'':'s'} contributing</span><span>🎯 ${Math.round(pct)}% complete</span></div><div class="aggregation-price">₱${money(displayedPrice)} / ${esc(r.unit)} ${String(r.poll?.status||'').toUpperCase()==='OPEN'?'· starting price':''}</div><div class="aggregation-contributors">${contributorsHtml||'<div class="aggregation-meta">No farmer contributions yet.</div>'}</div>${renderPricePoll(r)}<div class="aggregation-actions">${action}</div></article>`;
     }).join('');
   }
@@ -11984,20 +12018,31 @@ window.__setLunduAIbusy=function(v){
   }
 
   /* ---------- Profile scrolling + actions ---------- */
-  const oldOpenMyProfile=window.openMyProfile;
-  window.openMyProfile=async function(){
-    if(typeof oldOpenMyProfile==='function') await oldOpenMyProfile.apply(this,arguments);
+  function ensureFeedbackAction(){
     const box=$('myProfileContent');
     if(!box)return;
     let actions=box.querySelector('.lunduyan-profile-actions');
     if(!actions){
       actions=document.createElement('div');
       actions.className='lunduyan-profile-actions';
-      actions.innerHTML=`
-        <button type="button" class="lunduyan-feedback-btn" onclick="openModerationFeedback('FEEDBACK')">💡 Feedback / Help</button>
-        `;
       box.appendChild(actions);
     }
+    if(!actions.querySelector('.lunduyan-feedback-btn')){
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='lunduyan-feedback-btn';
+      b.textContent='💡 Feedback / Help';
+      b.onclick=()=>window.openModerationFeedback?.('FEEDBACK');
+      actions.appendChild(b);
+    }
+  }
+
+  const oldOpenMyProfile=window.openMyProfile;
+  window.openMyProfile=async function(){
+    if(typeof oldOpenMyProfile==='function') await oldOpenMyProfile.apply(this,arguments);
+    const box=$('myProfileContent');
+    if(!box)return;
+    ensureFeedbackAction();
     if(['MODERATOR','ADMIN','DEVELOPER'].includes(role()) && !box.querySelector('.lunduyan-moderator-btn')){
       const b=document.createElement('button');
       b.type='button'; b.className='lunduyan-moderator-btn primary-btn';
@@ -12154,6 +12199,13 @@ window.__setLunduAIbusy=function(v){
       }
     });
   });
+
+  // Keep the feedback/suggestion action present even when the profile panel renders asynchronously.
+  const feedbackObserver=new MutationObserver(()=>ensureFeedbackAction());
+  feedbackObserver.observe(document.body,{childList:true,subtree:true});
+  setTimeout(ensureFeedbackAction,150);
+  setTimeout(ensureFeedbackAction,500);
+  setTimeout(ensureFeedbackAction,1200);
 })();
 </script>
 
@@ -12442,5 +12494,123 @@ window.__setLunduAIbusy=function(v){
   },true);
 })();
 </script>
+
+
+<!-- FUNCTIONAL ONLY: restore feedback/suggestion action + robust farmer role sync -->
+<script id="LUNDUYAN_FUNCTIONAL_ROLE_FEEDBACK_REPAIR">
+(function(){
+  'use strict';
+  if(window.__LUNDUYAN_FUNCTIONAL_ROLE_FEEDBACK_REPAIR__) return;
+  window.__LUNDUYAN_FUNCTIONAL_ROLE_FEEDBACK_REPAIR__=true;
+
+  function profileRef(){
+    try{
+      if(window.currentProfile) return window.currentProfile;
+      if(typeof currentProfile!=='undefined' && currentProfile) return currentProfile;
+    }catch(_){ }
+    return null;
+  }
+  function roleOf(p){
+    return String(p?.role || p?.user_role || p?.account_role || p?.type || '').trim().toUpperCase();
+  }
+  function sbRef(){
+    try{return window.supabaseClient || (typeof supabaseClient!=='undefined' ? supabaseClient : null)}catch(_){return null}
+  }
+  async function getProfile(){
+    let p=profileRef();
+    if(roleOf(p)) return p;
+    const sb=sbRef();
+    try{
+      const r=await sb?.auth?.getSession?.();
+      const u=r?.data?.session?.user;
+      if(!u) return p;
+      if(roleOf(u.user_metadata)){
+        p={...(p||{}),...u.user_metadata};
+        window.currentProfile=p;
+        return p;
+      }
+      if(sb){
+        let q=await sb.from('users').select('*').eq('auth_user_id',u.id).maybeSingle();
+        if(!q?.data) q=await sb.from('users').select('*').eq('id',u.id).maybeSingle();
+        if(q?.data){
+          p={...(p||{}),...q.data};
+          window.currentProfile=p;
+        }
+      }
+    }catch(err){ console.warn('LUNDUYAN role sync:',err); }
+    return p;
+  }
+
+  async function syncFarmerCreateButton(){
+    const section=document.getElementById('aggregationSection');
+    const btn=document.getElementById('createAggregationBtn');
+    if(!section || !btn) return;
+    const p=await getProfile();
+    const farmer=roleOf(p)==='FARMER';
+    section.style.setProperty('display','block','important');
+    section.style.setProperty('visibility','visible','important');
+    if(farmer){
+      btn.hidden=false;
+      btn.disabled=false;
+      btn.removeAttribute('aria-hidden');
+      btn.style.setProperty('display','inline-flex','important');
+      btn.style.setProperty('visibility','visible','important');
+      btn.style.setProperty('opacity','1','important');
+      btn.onclick=function(e){
+        e.preventDefault();
+        if(typeof window.openAggregationRequest==='function') window.openAggregationRequest();
+      };
+    }
+  }
+
+  function ensureFeedbackButton(){
+    const box=document.getElementById('myProfileContent');
+    if(!box) return;
+    let actions=box.querySelector('.lunduyan-profile-actions');
+    if(!actions){
+      actions=document.createElement('div');
+      actions.className='lunduyan-profile-actions';
+      box.appendChild(actions);
+    }
+    if(!actions.querySelector('.lunduyan-feedback-btn')){
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='lunduyan-feedback-btn';
+      b.textContent='💡 Feedback / Help';
+      b.onclick=function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof window.openModerationFeedback==='function') window.openModerationFeedback('FEEDBACK');
+      };
+      actions.insertBefore(b,actions.firstChild||null);
+    }
+  }
+
+  function repair(){
+    ensureFeedbackButton();
+    syncFarmerCreateButton().catch(()=>{});
+  }
+  repair();
+  [100,300,700,1500,3000].forEach(t=>setTimeout(repair,t));
+  document.addEventListener('click',function(e){
+    const profileTrigger=e.target?.closest?.('#myProfileBtn,[data-action="profile"],[data-mobile-nav="profile"]');
+    if(profileTrigger) setTimeout(ensureFeedbackButton,50);
+    const agg=e.target?.closest?.('#createAggregationBtn');
+    if(agg) setTimeout(()=>syncFarmerCreateButton().catch(()=>{}),0);
+  },true);
+  if(window.supabaseClient?.auth?.onAuthStateChange){
+    window.supabaseClient.auth.onAuthStateChange(()=>{
+      setTimeout(repair,100);
+      setTimeout(repair,700);
+    });
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('myProfileContent')) ensureFeedbackButton();
+    if(document.getElementById('createAggregationBtn')) syncFarmerCreateButton().catch(()=>{});
+  });
+  obs.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
 </body>
 </html>
