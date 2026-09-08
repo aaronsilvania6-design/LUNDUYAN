@@ -8664,7 +8664,10 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
     body{padding-bottom:76px!important}
 
     /* Clean phone header: logo + LIVE only. The confusing icon row moves below. */
-    #app>.navbar{
+    .landing-nav{background:#16833b!important;color:#fff!important;border-bottom-color:rgba(255,255,255,.16)!important}
+.landing-nav .landing-nav-links a{color:#fff!important}
+.landing-nav .landing-nav-links a:hover{color:#d7f3df!important}
+#app>.navbar{
       height:58px!important;min-height:58px!important;padding:0 12px!important;
       display:flex!important;align-items:center!important;gap:8px!important;
       position:sticky!important;top:0!important;z-index:100!important;
@@ -12433,5 +12436,516 @@ window.__setLunduAIbusy=function(v){
   },true);
 })();
 </script>
+
+<!-- =========================================================
+     LUNDUYAN FINAL MAKER / MODERATION / AI REPAIR LAYER
+     ========================================================= -->
+<style id="LUNDUYAN_FINAL_MAKER_REPAIR_CSS">
+  /* Use the exact site green for every major top/header bar. */
+  :root{--lunduyan-top-green:#16833b!important}
+  #app>.navbar,
+  #app>.navbar *,
+  .profile-modal-header,
+  .chat-header,
+  .chat-list-header,
+  .notification-header,
+  .bot-header,
+  .lunduyan-moderation-head,
+  #moderatorInboxModal>.modal-card>.modal-header{
+    /* children are restyled below; this selector prevents accidental inherited theme colors */
+  }
+
+  #app>.navbar{
+    background:#16833b!important;
+    border-bottom:1px solid rgba(255,255,255,.16)!important;
+    color:#fff!important;
+  }
+  #app>.navbar .nav-brand{color:#fff!important}
+  #app>.navbar .nav-logo{
+    background:#0f6d2f!important;
+    color:#fff!important;
+    box-shadow:none!important;
+  }
+  #app>.navbar .secondary-btn,
+  #app>.navbar .profile-nav-btn,
+  #app>.navbar .nav-actions button{
+    background:#16833b!important;
+    color:#fff!important;
+    border-color:rgba(255,255,255,.28)!important;
+  }
+  #app>.navbar .secondary-btn:hover,
+  #app>.navbar .profile-nav-btn:hover,
+  #app>.navbar .nav-actions button:hover{
+    background:#116c30!important;
+    color:#fff!important;
+    border-color:rgba(255,255,255,.42)!important;
+  }
+
+  /* Farmer dashboard must stay green, not the old red farmer theme. */
+  body.role-farmer{
+    --role-primary:#16833b!important;
+    --role-primary-2:#22a447!important;
+    --role-soft:#eaf8ef!important;
+    --role-dark:#12351f!important;
+  }
+  body.role-farmer .welcome,
+  body.role-farmer .role-home{
+    background:linear-gradient(135deg,#12351f,#16833b,#22a447)!important;
+  }
+  body.role-farmer .bot-launcher{
+    background:linear-gradient(135deg,#16833b,#22a447)!important;
+  }
+
+  /* Major modal/panel headers. */
+  .profile-modal-header,
+  #profileModal .modal-header,
+  #myProfileModal .modal-header,
+  #reviewModal .modal-header,
+  #buyModal .modal-header,
+  #productModal .modal-header,
+  #aggregationRequestModal .modal-header,
+  #aggregationContributionModal .modal-header,
+  #blockedAccountsModal .modal-header,
+  #moderatorInboxModal .modal-header{
+    background:#16833b!important;
+    color:#fff!important;
+    border-bottom-color:rgba(255,255,255,.18)!important;
+  }
+  .profile-modal-header h1,.profile-modal-header h2,
+  #profileModal .modal-header h1,#profileModal .modal-header h2,
+  #myProfileModal .modal-header h1,#myProfileModal .modal-header h2,
+  #reviewModal .modal-header h1,#reviewModal .modal-header h2,
+  #buyModal .modal-header h1,#buyModal .modal-header h2,
+  #productModal .modal-header h1,#productModal .modal-header h2,
+  #aggregationRequestModal .modal-header h1,#aggregationRequestModal .modal-header h2,
+  #aggregationContributionModal .modal-header h1,#aggregationContributionModal .modal-header h2,
+  #blockedAccountsModal .modal-header h1,#blockedAccountsModal .modal-header h2,
+  #moderatorInboxModal .modal-header h1,#moderatorInboxModal .modal-header h2{
+    color:#fff!important;
+  }
+  #profileModal .modal-header .close,
+  #myProfileModal .modal-header .close,
+  #reviewModal .modal-header .close,
+  #buyModal .modal-header .close,
+  #productModal .modal-header .close,
+  #aggregationRequestModal .modal-header .close,
+  #aggregationContributionModal .modal-header .close,
+  #blockedAccountsModal .modal-header .close,
+  #moderatorInboxModal .modal-header .close{
+    background:#111!important;color:#fff!important;border:2px solid #111!important;
+  }
+
+  .chat-list-header,.chat-header,.notification-header{
+    background:#16833b!important;
+    color:#fff!important;
+    border-color:rgba(255,255,255,.18)!important;
+  }
+  .chat-list-header *,.chat-header *,.notification-header *{color:inherit}
+  .chat-header .online{color:#d7f3df!important}
+  .chat-list-header .close,.chat-header .close{
+    background:#111!important;color:#fff!important;border-color:#111!important;
+  }
+
+  .bot-header{
+    background:linear-gradient(135deg,#12351f,#16833b)!important;
+  }
+  .lunduyan-moderation-head{
+    background:linear-gradient(135deg,#12351f,#16833b)!important;
+  }
+
+  /* Profile tools: always visible, green, and mobile friendly. */
+  .lunduyan-profile-tools{
+    display:grid!important;
+    gap:9px!important;
+    margin-top:18px!important;
+    padding-top:16px!important;
+    border-top:1px solid var(--border)!important;
+  }
+  .lunduyan-profile-tools .lunduyan-tool-btn{
+    width:100%!important;
+    min-height:48px!important;
+    border:0!important;
+    border-radius:13px!important;
+    padding:12px 14px!important;
+    font-weight:900!important;
+    cursor:pointer!important;
+  }
+  .lunduyan-profile-tools .feedback{
+    background:#16833b!important;color:#fff!important;
+  }
+  .lunduyan-profile-tools .maker{
+    background:#eaf8ef!important;color:#12351f!important;border:1px solid #bfe6ca!important;
+  }
+  .lunduyan-profile-tools .report{
+    background:#fff0ef!important;color:#9b211b!important;border:1px solid #ffd0cb!important;
+  }
+
+  /* Maker inbox cards. */
+  .lunduyan-maker-summary{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:10px!important;
+    margin:14px 0!important;
+  }
+  .lunduyan-maker-stat{
+    background:#f7faf8!important;
+    border:1px solid #e2ebe5!important;
+    border-radius:14px!important;
+    padding:13px!important;
+    text-align:center!important;
+  }
+  .lunduyan-maker-stat strong{display:block;font-size:21px;color:#16833b}
+  .lunduyan-maker-stat span{font-size:10px;color:#718078;font-weight:800}
+  .lunduyan-maker-filter{
+    display:flex!important;gap:7px!important;flex-wrap:wrap!important;margin-bottom:12px!important;
+  }
+  .lunduyan-maker-filter button{
+    border:1px solid #dce7df!important;background:#fff!important;border-radius:999px!important;
+    padding:8px 11px!important;font-size:11px!important;font-weight:900!important;cursor:pointer!important;
+  }
+  .lunduyan-maker-filter button.active{background:#16833b!important;color:#fff!important;border-color:#16833b!important}
+  .lunduyan-maker-card{
+    border:1px solid #e0e9e3!important;border-radius:16px!important;background:#fff!important;
+    padding:15px!important;margin-bottom:10px!important;box-shadow:0 8px 22px rgba(18,53,31,.05)!important;
+  }
+  .lunduyan-maker-card.ai{border-left:4px solid #16833b!important}
+  .lunduyan-maker-card.report{border-left:4px solid #d93025!important}
+  .lunduyan-maker-card.feedback{border-left:4px solid #2878d4!important}
+  .lunduyan-maker-card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .lunduyan-maker-meta{font-size:10px;color:#7a8780;margin-top:4px;line-height:1.45}
+  .lunduyan-maker-message{font-size:13px;line-height:1.6;color:#26342c;margin-top:11px;white-space:pre-wrap}
+  .lunduyan-maker-status{font-size:10px;font-weight:900;border-radius:999px;padding:5px 8px;background:#eef2ef}
+  .lunduyan-maker-status.open{background:#fff3e0;color:#a15c00}
+  .lunduyan-maker-status.review{background:#eaf3ff;color:#205d9e}
+  .lunduyan-maker-status.done{background:#eaf8ef;color:#176b31}
+
+  @media(max-width:600px){
+    .lunduyan-maker-summary{grid-template-columns:1fr 1fr!important}
+    .lunduyan-profile-tools{margin-top:14px!important}
+  }
+</style>
+
+<script id="LUNDUYAN_FINAL_MAKER_REPAIR_JS">
+(function(){
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const esc = v => typeof window.escapeHtml==='function'
+    ? window.escapeHtml(String(v??''))
+    : String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const sid = v => String(v??'');
+
+  function getProfile(){
+    return window.currentProfile || (typeof currentProfile!=='undefined' ? currentProfile : null);
+  }
+  function getAuthUser(){
+    return window.currentUser || (typeof currentUser!=='undefined' ? currentUser : null);
+  }
+  function getRole(){
+    return String(getProfile()?.role||'').trim().toUpperCase();
+  }
+
+  /*
+   * In this school/demo build the owner uses a FARMER account.
+   * A production deployment should use users.is_maker=true or a
+   * privileged role instead of treating every farmer as the maker.
+   */
+  function isMaker(){
+    const p=getProfile(), u=getAuthUser();
+    return !!p && (
+      p.is_maker===true ||
+      String(u?.user_metadata?.is_maker||'').toLowerCase()==='true' ||
+      ['ADMIN','DEVELOPER','MODERATOR'].includes(getRole())
+    );
+  }
+
+  /* ---------- Fix privileged roles being forced back to BUYER ---------- */
+  async function restorePrivilegedRole(){
+    const p=getProfile(), u=getAuthUser();
+    if(!p || !window.supabaseClient || !u?.id)return;
+    try{
+      const {data:fresh}=await window.supabaseClient
+        .from('users').select('id,role,is_maker,full_name,email,auth_user_id')
+        .eq('auth_user_id',String(u.id)).maybeSingle();
+      if(fresh){
+        const dbRole=String(fresh.role||'').toUpperCase();
+        if(['ADMIN','DEVELOPER','MODERATOR','FARMER','BUYER'].includes(dbRole)){
+          window.currentProfile={...p,...fresh,role:dbRole};
+          try{currentProfile=window.currentProfile;}catch(_){}
+        }
+      }
+    }catch(e){ console.warn('LUNDUYAN role restore:',e); }
+  }
+
+  /* ---------- Feedback/report insert with FK-safe sender resolution ---------- */
+  window.submitModeratorFeedback = async function(payload){
+    if(!window.supabaseClient) throw new Error('Supabase connection is not ready.');
+    const p=getProfile(), auth=getAuthUser();
+    if(!p || !auth?.id) throw new Error('Please log in again before sending feedback.');
+
+    const args={
+      p_subject:String(payload?.subject||'General feedback'),
+      p_message:String(payload?.message||''),
+      p_category:String(payload?.category||'FEEDBACK'),
+      p_reported_account:payload?.reported_account ? String(payload.reported_account) : null,
+      p_reason:payload?.reason ? String(payload.reason) : null
+    };
+
+    /* Preferred RPC: server resolves auth.uid() -> public.users.id. */
+    try{
+      const rpc=await window.supabaseClient.rpc('submit_moderator_feedback',args);
+      if(!rpc.error)return rpc.data;
+      console.warn('submit_moderator_feedback RPC failed; using FK-safe fallback:',rpc.error);
+    }catch(e){
+      console.warn('submit_moderator_feedback RPC unavailable:',e);
+    }
+
+    /* Resolve the actual public.users primary key from auth_user_id. */
+    let publicId=null;
+    try{
+      const r=await window.supabaseClient.from('users').select('id')
+        .eq('auth_user_id',String(auth.id)).maybeSingle();
+      if(!r.error && r.data?.id) publicId=String(r.data.id);
+    }catch(_){}
+
+    const candidates=[publicId,String(p.id),String(auth.id)].filter((v,i,a)=>v && a.indexOf(v)===i);
+    let lastError=null;
+
+    for(const senderId of candidates){
+      const direct={
+        sender_id:senderId,
+        subject:args.p_subject,
+        message:args.p_message,
+        category:args.p_category,
+        reported_account:args.p_reported_account,
+        reason:args.p_reason,
+        status:'OPEN'
+      };
+      const result=await window.supabaseClient.from('moderator_feedback')
+        .insert(direct).select('id,status').single();
+      if(!result.error)return result.data;
+      lastError=result.error;
+
+      /* A legacy FK may point to auth.users instead of public.users.
+         If so, the next candidate is the auth UUID. */
+      if(String(result.error.code||'')!=='23503' &&
+         !String(result.error.message||'').toLowerCase().includes('foreign key')) break;
+    }
+    throw lastError || new Error('Unable to send the moderation message.');
+  };
+
+  /* ---------- Profile buttons: append after the LAST profile renderer ---------- */
+  function ensureProfileTools(){
+    const box=$('myProfileContent');
+    if(!box || !getProfile())return;
+
+    let tools=box.querySelector('.lunduyan-profile-tools');
+    if(!tools){
+      tools=document.createElement('div');
+      tools.className='lunduyan-profile-tools';
+      box.appendChild(tools);
+    }
+
+    tools.innerHTML=`
+      <button type="button" class="lunduyan-tool-btn feedback"
+        onclick="openModerationFeedback('FEEDBACK')">💡 Feedback for LUNDUYAN</button>
+      <button type="button" class="lunduyan-tool-btn report"
+        onclick="openModerationFeedback('REPORT')">⚑ Report an account</button>
+      ${isMaker()?`<button type="button" class="lunduyan-tool-btn maker"
+        onclick="openMakerInbox()">🛠️ Maker Center — Feedback, Reports & AI Suggestions</button>`:''}
+    `;
+
+    /* Put tools after the current content, never replace the profile form. */
+    requestAnimationFrame(()=>{ if(box) box.scrollTop=box.scrollHeight; });
+  }
+
+  const previousOpenMyProfile=window.openMyProfile;
+  if(typeof previousOpenMyProfile==='function'){
+    window.openMyProfile=async function(){
+      const result=await previousOpenMyProfile.apply(this,arguments);
+      setTimeout(ensureProfileTools,0);
+      setTimeout(ensureProfileTools,180);
+      setTimeout(ensureProfileTools,600);
+      return result;
+    };
+  }
+
+  /* Re-add the buttons if a legacy profile renderer replaces innerHTML. */
+  function observeProfile(){
+    const box=$('myProfileContent');
+    if(!box || box.dataset.makerObserver==='1')return;
+    box.dataset.makerObserver='1';
+    const obs=new MutationObserver(()=>{
+      if(box.querySelector('.lunduyan-profile-tools'))return;
+      if(getProfile())setTimeout(ensureProfileTools,0);
+    });
+    obs.observe(box,{childList:true});
+  }
+
+  /* ---------- Maker inbox ---------- */
+  let makerFilter='ALL';
+  let makerRows=[];
+
+  window.openMakerInbox=async function(){
+    if(!isMaker()){alert('Maker Center access is restricted.');return;}
+    const modal=$('moderatorInboxModal'), box=$('moderatorInboxContent');
+    if(!modal||!box)return;
+
+    modal.classList.remove('hidden');
+    if(typeof setModalScrollLock==='function')setModalScrollLock(true);
+    box.innerHTML='<div class="empty">Loading LUNDUYAN feedback, reports and AI suggestions...</div>';
+
+    const {data,error}=await window.supabaseClient.from('moderator_feedback')
+      .select('id,sender_id,subject,message,category,reported_account,reason,status,created_at')
+      .order('created_at',{ascending:false}).limit(200);
+
+    if(error){
+      box.innerHTML=`<div class="message error"><strong>Maker Center could not load.</strong><br>${esc(error.message)}<br><small>If this is a new Supabase setup, run the supplied SQL repair file so the maker RLS policy is installed.</small></div>`;
+      return;
+    }
+    makerRows=data||[];
+    renderMakerInbox();
+  };
+
+  function renderMakerInbox(){
+    const box=$('moderatorInboxContent');
+    if(!box)return;
+    const rows=makerRows.filter(r=>makerFilter==='ALL' || String(r.category||'FEEDBACK').toUpperCase()===makerFilter);
+    const feedback=makerRows.filter(r=>String(r.category||'').toUpperCase()==='FEEDBACK').length;
+    const reports=makerRows.filter(r=>String(r.category||'').toUpperCase()==='REPORT').length;
+    const ai=makerRows.filter(r=>String(r.category||'').toUpperCase()==='AI_SUGGESTION').length;
+
+    box.innerHTML=`
+      <div class="lunduyan-maker-summary">
+        <div class="lunduyan-maker-stat"><strong>${feedback}</strong><span>FEEDBACK</span></div>
+        <div class="lunduyan-maker-stat"><strong>${reports}</strong><span>REPORTS</span></div>
+        <div class="lunduyan-maker-stat"><strong>${ai}</strong><span>AI SUGGESTIONS</span></div>
+      </div>
+      <div class="lunduyan-maker-filter">
+        ${['ALL','FEEDBACK','REPORT','AI_SUGGESTION'].map(f=>`
+          <button type="button" class="${makerFilter===f?'active':''}"
+            onclick="setMakerFilter('${f}')">${f==='AI_SUGGESTION'?'💡 AI suggestions':f}</button>
+        `).join('')}
+      </div>
+      ${rows.length ? rows.map(renderMakerCard).join('') :
+        '<div class="empty">Nothing here yet.</div>'}
+    `;
+  }
+
+  function renderMakerCard(r){
+    const cat=String(r.category||'FEEDBACK').toUpperCase();
+    const cls=cat==='REPORT'?'report':(cat==='AI_SUGGESTION'?'ai':'feedback');
+    const status=String(r.status||'OPEN').toUpperCase();
+    const statusClass=status==='RESOLVED'?'done':(status==='IN_REVIEW'?'review':'open');
+    return `
+      <article class="lunduyan-maker-card ${cls}">
+        <div class="lunduyan-maker-card-top">
+          <div>
+            <strong>${esc(r.subject||'LUNDUYAN message')}</strong>
+            <div class="lunduyan-maker-meta">
+              ${esc(cat)} · sender ${esc(r.sender_id||'unknown')} ·
+              ${r.created_at?new Date(r.created_at).toLocaleString():''}
+            </div>
+          </div>
+          <span class="lunduyan-maker-status ${statusClass}">${esc(status)}</span>
+        </div>
+        ${r.reported_account?`<div class="lunduyan-maker-meta" style="margin-top:9px">
+          <strong>Reported account:</strong> ${esc(r.reported_account)}
+          ${r.reason?` · <strong>Reason:</strong> ${esc(r.reason)}`:''}
+        </div>`:''}
+        <div class="lunduyan-maker-message">${esc(r.message||'')}</div>
+        <div class="lunduyan-report-actions" style="margin-top:11px">
+          <button type="button" class="secondary-btn"
+            onclick="updateMakerMessage('${esc(sid(r.id))}','IN_REVIEW')">Mark in review</button>
+          <button type="button" class="primary-btn"
+            onclick="updateMakerMessage('${esc(sid(r.id))}','RESOLVED')">Resolve</button>
+        </div>
+      </article>`;
+  }
+
+  window.setMakerFilter=function(filter){
+    makerFilter=String(filter||'ALL').toUpperCase();
+    renderMakerInbox();
+  };
+
+  window.updateMakerMessage=async function(id,status){
+    if(!isMaker())return;
+    const {error}=await window.supabaseClient.from('moderator_feedback')
+      .update({status}).eq('id',sid(id));
+    if(error){alert(error.message);return;}
+    const row=makerRows.find(r=>sid(r.id)===sid(id));
+    if(row)row.status=status;
+    renderMakerInbox();
+  };
+
+  /* ---------- Save useful AI improvement suggestions ---------- */
+  async function saveAISuggestion(question,answer){
+    const p=getProfile();
+    if(!p || !answer)return;
+    const q=String(question||'').trim();
+    const a=String(answer||'').trim();
+    if(!q || !a)return;
+    try{
+      await window.submitModeratorFeedback({
+        subject:'AI App Improvement Suggestion',
+        message:`User asked: ${q}\n\nLUNDUYAN AI suggestion:\n${a}`,
+        category:'AI_SUGGESTION'
+      });
+    }catch(e){
+      console.warn('AI suggestion could not be saved:',e);
+    }
+  }
+
+  const originalAsk=window.askLUNDUYANAI;
+  if(typeof originalAsk==='function'){
+    window.askLUNDUYANAI=async function(text){
+      const q=String(text||'').trim();
+      const shouldSave=/\b(improve|improvement|suggest|suggestion|idea|feature|better|fix|what should i change|what can i add|recommend)\b/i.test(q);
+      const beforeCount=$('botMessages')?.children.length||0;
+      const result=await originalAsk.apply(this,arguments);
+
+      /* Wait for the AI message to be inserted, then save its latest answer. */
+      if(shouldSave){
+        setTimeout(()=>{
+          const msgs=[...document.querySelectorAll('#botMessages .bot-msg.bot')];
+          const latest=msgs[msgs.length-1];
+          const answer=(latest?.innerText||'').replace(/^Sources\s*/i,'').trim();
+          if(answer && answer!=='I could not generate an answer right now. Please try again.')
+            saveAISuggestion(q,answer);
+        },350);
+      }
+      return result;
+    };
+  }
+
+  /* A clean quick action that explicitly asks AI for product/app improvements. */
+  function addImprovePrompt(){
+    const s=document.querySelector('.bot-suggestions');
+    if(!s || s.querySelector('[data-maker-ai-prompt]'))return;
+    const b=document.createElement('button');
+    b.type='button';
+    b.dataset.makerAiPrompt='1';
+    b.textContent='💡 Improve my app';
+    b.onclick=()=>window.askLUNDUYANAI?.('Review LUNDUYAN and suggest 3 concrete improvements that would make the app more useful, reliable, and easier to use.');
+    s.appendChild(b);
+  }
+
+  async function boot(){
+    await restorePrivilegedRole();
+    addImprovePrompt();
+    observeProfile();
+    ensureProfileTools();
+  }
+
+  if(document.readyState==='loading')
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,500));
+  else
+    setTimeout(boot,500);
+
+  [1200,2500,5000].forEach(ms=>setTimeout(()=>{observeProfile();ensureProfileTools();addImprovePrompt();},ms));
+
+})();
+</script>
+
 </body>
 </html>
