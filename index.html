@@ -10410,18 +10410,24 @@ setTimeout(run,700);
   const money=v=>typeof formatMoney==='function'?formatMoney(v):Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
   const getLunduProfile=()=>{
     try{
-      if(window.currentProfile) return window.currentProfile;
+      /* The main app uses the local `currentProfile` variable. Prefer it because
+         profile updates can replace that object before window.currentProfile is synced. */
       if(typeof currentProfile!=='undefined' && currentProfile) return currentProfile;
+      if(window.currentProfile) return window.currentProfile;
     }catch(_){}
     return null;
   };
-  const normalizedRole=p=>String(p?.role || p?.user_role || p?.account_role || '').trim().toUpperCase();
+  const normalizedRole=p=>String(p?.role || p?.user_role || p?.account_role || p?.type || '').trim().toUpperCase();
   const role=()=>normalizedRole(getLunduProfile());
   const isFarmer=()=>role()==='FARMER';
 
   async function resolveAggregationProfile(){
     let p=getLunduProfile();
-    if(normalizedRole(p)) return p;
+    if(normalizedRole(p)){
+      /* Keep both references synchronized so every aggregation handler sees the same role. */
+      try{ window.currentProfile=p; }catch(_){}
+      return p;
+    }
     try{
       const sb=window.supabaseClient || (typeof supabaseClient!=='undefined' ? supabaseClient : null);
       const sessionResult=await sb?.auth?.getSession?.();
@@ -10431,6 +10437,7 @@ setTimeout(run,700);
       if(normalizedRole(meta)){
         p={...(p||{}),...meta};
         window.currentProfile=p;
+        try{ currentProfile=p; }catch(_){}
         return p;
       }
       if(sb){
@@ -10439,6 +10446,7 @@ setTimeout(run,700);
         if(q?.data){
           p={...(p||{}),...q.data};
           window.currentProfile=p;
+          try{ currentProfile=p; }catch(_){}
         }
       }
     }catch(err){console.warn('LUNDUYAN aggregation role lookup:',err)}
@@ -10522,7 +10530,7 @@ setTimeout(run,700);
     try{
       const pollIds=rows.map(r=>r.poll?.id).filter(Boolean);
       if(pollIds.length){
-        const {data:votes}=await supabaseClient.from('aggregation_price_votes').select('poll_id,option_id').eq('farmer_id',window.currentProfile.id).in('poll_id',pollIds);
+        const {data:votes}=await supabaseClient.from('aggregation_price_votes').select('poll_id,option_id').eq('farmer_id',getLunduProfile()?.id).in('poll_id',pollIds);
         const map=new Map((votes||[]).map(v=>[String(v.poll_id),String(v.option_id)]));
         rows.forEach(r=>{if(r.poll)r.my_vote=map.get(String(r.poll.id))||null;});
       }
