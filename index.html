@@ -10467,12 +10467,15 @@ setTimeout(run,700);
 
   function renderPricePoll(r){
     const poll=r.poll,options=r.price_options||[];
-    if(!poll||!options.length)return String(r.status||'').toUpperCase()==='TARGET_REACHED'?'<div class="aggregation-poll muted">Preparing community price choices...</div>':'<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
+    if(!poll||!options.length)return String(r.status||'').toUpperCase()==='TARGET_REACHED'?'<div class="aggregation-poll muted"><strong>🗳️ Price voting is being prepared.</strong><small>The farmer prices will appear here as vote buttons.</small></div>':'<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
-    const canVote=isFarmer()&&String(r.status||'').toUpperCase()==='TARGET_REACHED'&&!closed;
-    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ Farmer price poll</strong><small>${closed?'Final community price':'All contributing farmers choose one price'}</small></div><span class="poll-leader">₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
+    const myId=String(window.currentProfile?.id||'');
+    const isContributor=(r.contributors||[]).some(c=>String(c.farmer_id)===myId);
+    const canVote=isFarmer()&&isContributor&&String(r.status||'').toUpperCase()==='TARGET_REACHED'&&!closed;
+    const instruction=closed?'Voting complete — final community price selected.':canVote?'Tap ONE price below to cast your vote. You can change your vote by tapping another price.':isFarmer()&&!isContributor?'Only farmers who contributed to this pool can vote.':'Farmers who contributed choose one final price.';
+    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ Farmer price vote</strong><small>${instruction}</small></div><span class="poll-leader">₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div><div class="poll-choice-label">${closed?'FINAL COMMUNITY PRICE':'CHOOSE ONE PRICE'}</div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span class="poll-choice-main"><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><span class="poll-choice-bottom"><em>${o.votes} vote${o.votes===1?'':'s'}</em>${mine?'<strong>✓ YOUR VOTE</strong>':''}</span></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
   }
 
   function renderAggregations(rows){
@@ -10588,6 +10591,49 @@ setTimeout(run,700);
 })();
 </script>
 
+<style id="LUNDUYAN-COMMUNITY-PHONE-ACTION-FIX">
+/* PHONE FUNCTIONALITY FIX — keeps community voting/actions visible and tappable. */
+.aggregation-poll{margin-top:14px;padding:14px;background:#f8fbf9;border:1px solid #dfeae2;border-radius:16px;overflow:visible!important;position:relative;z-index:2}
+.aggregation-poll .poll-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.aggregation-poll .poll-head strong{display:block;font-size:15px;color:#173b27}
+.aggregation-poll .poll-head small{display:block;margin-top:4px;color:#6b786f;line-height:1.45}
+.poll-leader{font-weight:900;white-space:nowrap;color:#16833b}
+.poll-choice-label{font-size:10px;font-weight:900;letter-spacing:.7px;color:#718078;margin:8px 0}
+.poll-option{width:100%;min-height:58px;margin:7px 0;padding:10px 12px;border:1px solid #d6e3da!important;border-radius:13px!important;background:#fff!important;color:#173b27!important;display:grid!important;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;text-align:left;cursor:pointer!important;box-sizing:border-box;opacity:1!important}
+.poll-option:disabled{cursor:not-allowed!important;opacity:.72!important}
+.poll-option:not(:disabled):hover{border-color:#16833b!important}
+.poll-option.selected{border:2px solid #16833b!important;background:#eef8f1!important}
+.poll-choice-main{font-size:15px}.poll-choice-main b{font-size:18px}
+.poll-bar{grid-column:1/-1;display:block;height:7px;background:#e8efe9;border-radius:999px;overflow:hidden}.poll-bar i{display:block;height:100%;background:#16833b;border-radius:inherit}
+.poll-choice-bottom{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#718078}.poll-choice-bottom strong{color:#16833b;font-size:10px}
+.poll-foot{margin-top:9px;font-size:11px;color:#718078}
+.aggregation-actions,.order-actions{position:relative;z-index:3;padding-bottom:2px}
+.aggregation-actions button,.order-actions button{min-height:46px!important;touch-action:manipulation;position:relative;z-index:4}
+@media(max-width:700px){
+  body{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
+  main,.container,#app{padding-bottom:28px!important}
+  #aggregationSection{padding-bottom:24px!important;scroll-margin-bottom:110px!important}
+  .aggregation-card{overflow:visible!important}
+  .aggregation-card-top{gap:8px}
+  .aggregation-product{font-size:17px}
+  .aggregation-meta{overflow-wrap:anywhere}
+  .aggregation-actions{display:flex!important;flex-direction:column!important;gap:9px!important;width:100%!important}
+  .aggregation-actions button{width:100%!important;flex:0 0 auto!important}
+  .aggregation-report-btn{width:100%!important;min-height:44px!important}
+  .aggregation-poll{padding:12px;margin-top:12px}
+  .aggregation-poll .poll-head{flex-direction:column;gap:6px}
+  .poll-leader{font-size:14px}
+  .poll-option{min-height:64px;padding:11px!important}
+  .order-card{overflow:visible!important}
+  .order-actions{display:flex!important;flex-direction:column!important;width:100%!important;gap:8px!important}
+  .order-actions button{width:100%!important}
+  .modal{z-index:10000!important;padding:7px!important;align-items:flex-start!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}
+  .modal-card{max-height:calc(100vh - 14px)!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;padding-bottom:26px!important;margin:0 auto!important}
+  #aggregationContributionModal .modal-card,#aggregationRequestModal .modal-card{max-height:calc(100vh - 14px)!important;overflow-y:auto!important}
+  #aggregationContributionForm{padding-bottom:18px!important}
+  #mobileBottomNav{z-index:9000!important}
+}
+</style>
 <style id="LUNDUYAN_FINAL_V2_CLEAN_PATCH">
 /* =========================================================
    LUNDUYAN FINAL V2 — MOBILE + AUTH + COMMUNITY
