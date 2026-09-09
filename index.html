@@ -10485,7 +10485,7 @@ setTimeout(run,700);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
     const canVote=isFarmer()&&!!r.is_current_contributor&&String(r.status||'').toUpperCase()==='TARGET_REACHED'&&!closed;
     const voteNote=closed?'Voting complete — final community price selected.':canVote?'TAP ONE PRICE TO VOTE. TAP ANOTHER PRICE TO CHANGE YOUR VOTE.':isFarmer()&&!r.is_current_contributor?'Only farmers who contributed to this pool can vote.': 'Contributing farmers vote on the final community price.';
-    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
+    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">${closed&&poll.winning_price!=null?'₱'+money(poll.winning_price)+'/'+esc(r.unit):closed?'FINAL PRICE PENDING':leader?'₱'+money(leader.price)+'/'+esc(r.unit):'PRICE VOTE'}</span></div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
   }
 
   function renderAggregations(rows){
@@ -10496,12 +10496,14 @@ setTimeout(run,700);
       const target=Number(r.target_quantity||0),total=Number(r.total_contributed||0),pct=target?Math.min(100,total/target*100):0,remaining=Math.max(target-total,0),status=String(r.status||'OPEN').toUpperCase(),contributors=r.contributors||[];
       const contributorCount=new Set(contributors.map(c=>String(c.farmer_id))).size;
       const statusClass=status==='TARGET_REACHED'||status==='SOLD'?'target':(status==='COMPLETED'||status==='CANCELLED'?'closed':'');
-      const displayedPrice=String(r.poll?.status||'').toUpperCase()==='CLOSED'&&r.poll?.winning_price!=null?r.poll.winning_price:r.offer_price;
+      const pollClosed=String(r.poll?.status||'').toUpperCase()==='CLOSED';
+      const finalPriceReady=pollClosed&&r.poll?.winning_price!=null&&Number.isFinite(Number(r.poll.winning_price));
+      const displayedPrice=finalPriceReady?Number(r.poll.winning_price):r.offer_price;
       let action='';
       if(currentRole==='FARMER'&&remaining>0&&status==='OPEN')action=`<button class="hero-primary aggregation-action-btn" type="button" onclick="openAggregationContribution('${r.id}')">＋ Contribute Harvest</button>`;
-      if(currentRole==='BUYER'&&status==='TARGET_REACHED'&&String(r.poll?.status||'').toUpperCase()==='CLOSED')action=`<button class="hero-primary aggregation-action-btn" type="button" onclick="buyAggregatedSupply('${r.id}')">🛒 Place Full Pool Order</button>`;
+      if(currentRole==='BUYER'&&status==='TARGET_REACHED'&&finalPriceReady)action=`<button class="hero-primary aggregation-action-btn" type="button" onclick="buyAggregatedSupply('${r.id}')">🛒 Place Full Pool Order</button>`;
       if(currentRole==='BUYER'&&status==='OPEN')action=`<span class="aggregation-waiting">Waiting for farmers · ${contributorCount} contributor${contributorCount===1?'':'s'}</span>`;
-      if(status==='TARGET_REACHED'&&String(r.poll?.status||'').toUpperCase()!=='CLOSED')action=`<span class="aggregation-waiting">Price voting in progress · ${contributorCount} farmer${contributorCount===1?'':'s'}</span>`;
+      if(status==='TARGET_REACHED'&&!finalPriceReady)action=`<span class="aggregation-waiting">${pollClosed?'Final price is being finalized · please wait':'Price voting in progress · '+contributorCount+' farmer'+(contributorCount===1?'':'s')}</span>`;
       if(status==='SOLD')action=`<span class="aggregation-waiting success">Community order created</span>`;
       const contributorsHtml=contributors.map(c=>`<div class="aggregation-contributor"><span>👨‍🌾 ${esc(c.farmer?.full_name||'Farmer')} · ₱${money(c.proposed_price||0)}/${esc(r.unit)}</span><span>${esc(c.quantity)} ${esc(r.unit)}</span></div>`).join('');
       const creatorId=String(r.creator_id||''),creatorName=String(r.creator?.full_name||'Farmer');
@@ -10522,7 +10524,9 @@ setTimeout(run,700);
     const total=Number(r.total_contributed||0),target=Number(r.target_quantity||0),pollStatus=String(r.poll?.status||'').toUpperCase();
     if(String(r.status||'').toUpperCase()!=='TARGET_REACHED'||total<target){alert('The farmer pool must reach its target first.');return;}
     if(pollStatus!=='CLOSED'){alert('All contributing farmers must finish the price vote before the buyer can order.');return;}
-    const finalPrice=Number(r.poll?.winning_price??r.offer_price??0),amount=total*finalPrice;
+    const finalPriceRaw=r.poll?.winning_price;
+    if(pollStatus!=='CLOSED'||finalPriceRaw===null||finalPriceRaw===undefined||!Number.isFinite(Number(finalPriceRaw))){alert('The buyer cannot order yet. A final community price must be selected by the contributing farmers first.');return;}
+    const finalPrice=Number(finalPriceRaw),amount=total*finalPrice;
     if(!confirm(`Place full community order for ${total} ${r.unit} for ₱${money(amount)}?\nFinal community price: ₱${money(finalPrice)} / ${r.unit}\nThis creates an order first. You will approve/payment-confirm it from Orders.`))return;
     const {data,error}=await supabaseClient.rpc('purchase_aggregation',{p_request_id:id});
     if(error){alert(error.message);return;}
