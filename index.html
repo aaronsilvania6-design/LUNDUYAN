@@ -10446,14 +10446,26 @@ setTimeout(run,700);
   async function loadAggregations(){
     const grid=$('aggregationGrid');updateRoleUI();if(!grid||!window.currentProfile||!window.supabaseClient)return;
     grid.innerHTML='<div class="aggregation-empty">Loading farmer community pools...</div>';
-    const {data,error}=await supabaseClient.from('aggregation_requests').select(`*, creator:creator_id(full_name), aggregation_contributions(id,farmer_id,quantity,status,proposed_price,farmer:farmer_id(full_name)), aggregation_price_polls(id,status,winning_price,aggregation_price_options(id,price,aggregation_price_votes(count)))`).order('created_at',{ascending:false});
+    const selectFields=`*, creator:creator_id(full_name), aggregation_contributions(id,farmer_id,quantity,status,proposed_price,farmer:farmer_id(full_name)), aggregation_price_polls(id,status,winning_price,aggregation_price_options(id,price,aggregation_price_votes(count)))`;
+    let {data,error}=await supabaseClient.from('aggregation_requests').select(selectFields).order('created_at',{ascending:false});
     if(error){grid.innerHTML=`<div class="aggregation-empty"><strong>Community pools could not be loaded.</strong><br><small>${esc(error.message)}</small></div>`;return;}
+    /* Make sure every TARGET_REACHED pool has price choices before showing the voting UI. */
+    try{
+      const needsRefresh=(data||[]).filter(r=>String(r.status||'').toUpperCase()==='TARGET_REACHED').map(r=>r.id).filter(Boolean);
+      if(needsRefresh.length){
+        await Promise.all(needsRefresh.map(id=>supabaseClient.rpc('refresh_aggregation_price_options',{p_request_id:id})));
+        const refreshed=await supabaseClient.from('aggregation_requests').select(selectFields).order('created_at',{ascending:false});
+        if(!refreshed.error)data=refreshed.data||data;
+      }
+    }catch(e){console.warn('Aggregation price options refresh:',e);}
     const rows=(data||[]).map(r=>{
       const contributions=(r.aggregation_contributions||[]).filter(c=>String(c.status||'ACTIVE').toUpperCase()!=='CANCELLED');
       const total=contributions.reduce((sum,c)=>sum+Number(c.quantity||0),0);
       const poll=r.aggregation_price_polls?.[0]||null;
       const options=(poll?.aggregation_price_options||[]).map(o=>({...o,votes:Number(o.aggregation_price_votes?.[0]?.count||0)}));
-      return {...r,total_contributed:total,contributors:contributions,poll,price_options:options,my_vote:null};
+      const me=String(window.currentProfile?.id||'');
+      const isContributor=contributions.some(c=>String(c.farmer_id)===me);
+      return {...r,total_contributed:total,contributors:contributions,poll,price_options:options,my_vote:null,is_current_contributor:isContributor};
     });
     try{
       const pollIds=rows.map(r=>r.poll?.id).filter(Boolean);
@@ -10467,12 +10479,13 @@ setTimeout(run,700);
 
   function renderPricePoll(r){
     const poll=r.poll,options=r.price_options||[];
-    if(!poll||!options.length)return String(r.status||'').toUpperCase()==='TARGET_REACHED'?'<div class="aggregation-poll muted">Preparing community price choices...</div>':'<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
+    if(!poll||!options.length)return String(r.status||'').toUpperCase()==='TARGET_REACHED'?'<div class="aggregation-poll muted"><strong>🗳️ Farmer price voting</strong><br>Price choices are being prepared. Refresh in a moment.</div>':'<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
-    const canVote=isFarmer()&&String(r.status||'').toUpperCase()==='TARGET_REACHED'&&!closed;
-    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ Farmer price poll</strong><small>${closed?'Final community price':'All contributing farmers choose one price'}</small></div><span class="poll-leader">₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
+    const canVote=isFarmer()&&!!r.is_current_contributor&&String(r.status||'').toUpperCase()==='TARGET_REACHED'&&!closed;
+    const voteNote=closed?'Voting complete — final community price selected.':canVote?'TAP ONE PRICE TO VOTE. TAP ANOTHER PRICE TO CHANGE YOUR VOTE.':isFarmer()&&!r.is_current_contributor?'Only farmers who contributed to this pool can vote.': 'Contributing farmers vote on the final community price.';
+    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
   }
 
   function renderAggregations(rows){
@@ -12533,6 +12546,104 @@ window.__setLunduAIbusy=function(v){
   #orders,#farmerOrders{
     scroll-margin-top:78px!important;
     padding-bottom:120px!important;
+  }
+}
+</style>
+<style id="LUNDUYAN_FINAL_NO_CLIP_MOBILE">
+/* =========================================================
+   FINAL MOBILE ACCESSIBILITY FIX — NO BUTTON CLIPPING
+   ========================================================= */
+#aggregationRequestModal,
+#aggregationContributionModal{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  align-items:flex-start!important;
+  padding:12px!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#aggregationRequestModal .aggregation-modal-card,
+#aggregationContributionModal .aggregation-modal-card{
+  width:100%!important;
+  max-width:560px!important;
+  max-height:calc(100dvh - 24px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:0!important;
+  margin:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#aggregationRequestForm,
+#aggregationContributionForm{
+  min-height:0!important;
+  overflow:visible!important;
+  padding-bottom:24px!important;
+}
+#aggregationRequestForm .aggregation-actions,
+#aggregationContributionForm .aggregation-actions{
+  position:relative!important;
+  inset:auto!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  width:100%!important;
+  padding:4px 0 8px!important;
+  margin-top:8px!important;
+  z-index:20!important;
+}
+#aggregationRequestForm .aggregation-actions button,
+#aggregationContributionForm .aggregation-actions button{
+  min-height:52px!important;
+  flex:1 1 180px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+#aggregationSection .aggregation-card,
+#aggregationSection .aggregation-poll,
+#aggregationSection .aggregation-actions,
+#aggregationSection .poll-option,
+#orders .order-card,
+#farmerOrders .order-card,
+#orders .order-actions,
+#farmerOrders .order-actions{
+  position:relative!important;
+  z-index:2!important;
+}
+@media(max-width:700px){
+  #aggregationRequestModal,
+  #aggregationContributionModal{
+    padding:8px!important;
+    align-items:flex-start!important;
+  }
+  #aggregationRequestModal .aggregation-modal-card,
+  #aggregationContributionModal .aggregation-modal-card{
+    width:100%!important;
+    max-width:none!important;
+    max-height:calc(100dvh - 16px)!important;
+    margin:0!important;
+    border-radius:16px!important;
+  }
+  #aggregationRequestForm .aggregation-actions,
+  #aggregationContributionForm .aggregation-actions{
+    flex-direction:column!important;
+    padding-bottom:18px!important;
+  }
+  #aggregationRequestForm .aggregation-actions button,
+  #aggregationContributionForm .aggregation-actions button{
+    width:100%!important;
+    flex:0 0 auto!important;
+    min-height:54px!important;
+  }
+  #aggregationSection .poll-option{
+    min-height:76px!important;
+    margin-bottom:8px!important;
+    padding:12px!important;
+    pointer-events:auto!important;
+  }
+  #aggregationSection .aggregation-actions{
+    padding-bottom:12px!important;
   }
 }
 </style>
