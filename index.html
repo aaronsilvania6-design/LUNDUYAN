@@ -10465,7 +10465,23 @@ setTimeout(run,700);
   }
 
   async function createCommunityPool(payload){
-    const {data,error}=await supabaseClient.rpc('create_community_pool',{p_product_name:String(payload.product_name),p_target_quantity:Number(payload.target_quantity),p_unit:String(payload.unit||'KG'),p_offer_price:Number(payload.offer_price),p_location:String(payload.location),p_description:payload.description?String(payload.description):null});
+    /* Create directly in the existing aggregation_requests table. The previous
+       RPC was the source of the false farmer-role rejection. */
+    const p=await resolveAggregationProfile();
+    if(normalizedRole(p)!=='FARMER') throw new Error('Only farmers can create a community pool.');
+    const creatorId=p?.id;
+    if(!creatorId) throw new Error('Farmer profile could not be resolved. Please refresh and try again.');
+    const row={
+      creator_id:creatorId,
+      product_name:String(payload.product_name),
+      target_quantity:Number(payload.target_quantity),
+      unit:String(payload.unit||'KG'),
+      offer_price:Number(payload.offer_price),
+      location:String(payload.location),
+      description:payload.description?String(payload.description):null,
+      status:'OPEN'
+    };
+    const {data,error}=await supabaseClient.from('aggregation_requests').insert(row).select('*').single();
     if(error) throw error;
     return data;
   }
@@ -12696,14 +12712,9 @@ window.__setLunduAIbusy=function(v){
     const form=document.getElementById('aggregationRequestForm');
     if(form && !form.dataset.finalFarmerRoleFix){
       form.dataset.finalFarmerRoleFix='1';
-      form.addEventListener('submit',async function(e){
-        const farmer=await hardSyncFarmerRole();
-        if(!farmer){
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          alert('Only farmers can create a community pool.');
-        }
-      },true);
+      /* Keep role synchronization in the background; do not race/block the
+         actual aggregation submit handler. */
+      form.addEventListener('submit',function(){ hardSyncFarmerRole(); },true);
     }
   }
 
