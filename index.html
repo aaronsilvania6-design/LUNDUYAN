@@ -10661,13 +10661,13 @@ setTimeout(run,700);
         const requestId=$('aggContributionRequestId')?.value;
         const quantity=Number($('aggContributionQty')?.value);
         if(quantity<=0){alert('Enter a valid contribution.');return;}
+        /* IMPORTANT: contribution writes must go through the secured RPC.
+           The FK points to public.users(id), while auth.uid() is auth.users(id).
+           The RPC resolves that relationship server-side. Never fall back to a
+           browser INSERT with auth/currentProfile IDs because that can violate
+           aggregation_contributions_farmer_id_fkey. */
         const {data,error}=await supabaseClient.rpc('contribute_to_aggregation',{p_request_id:requestId,p_quantity:quantity});
-        if(error){
-          /* V12 also grants direct INSERT to authenticated FARMER accounts,
-             so contribution still works if an older RPC is missing/broken. */
-          const fallback=await supabaseClient.from('aggregation_contributions').insert({request_id:requestId,farmer_id:String(currentProfile.id),quantity,status:'ACTIVE'}).select('id').single();
-          if(fallback.error){alert(error.message);return;}
-        }
+        if(error){alert(error.message||'Contribution could not be saved.');return;}
         closeAggregationContribution();await loadAggregations();
         alert(data?.target_reached?'Contribution saved. The target is reached — the pool is now ready for buyer purchase.':'Contribution saved successfully.');
       });
@@ -10988,13 +10988,14 @@ setTimeout(run,700);
   function addUser(text){const b=box();if(!b)return;b.insertAdjacentHTML('beforeend',`<div class="bot-msg user">${esc(text)}</div>`);scroll()}
   function addBot(text,annotations){
     const b=box();if(!b)return;
-    let html=esc(text).replace(/\n/g,'<br>');
-    html=html.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-    let sources='';
-    const anns=Array.isArray(annotations)?annotations:[];
-    const urls=[];for(const a of anns){const u=a?.url_citation?.url||a?.url;const title=a?.url_citation?.title||a?.title||u;if(u&&!urls.some(x=>x.url===u))urls.push({url:u,title});}
-    if(urls.length)sources='<div class="bot-sources"><strong>Sources</strong>'+urls.slice(0,5).map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title||x.url)}</a>`).join('')+'</div>';
-    b.insertAdjacentHTML('beforeend',`<div class="bot-msg bot">${html}${sources}</div>`);scroll()
+    /* Show the AI's actual synthesized answer in chat.
+       Search annotations are kept by the Edge Function for grounding,
+       but the chat must not replace the answer with a list of links. */
+    let answer=String(text||'').trim();
+    const onlyLinks=/^(?:\s*(?:https?:\/\/|www\.)\S+\s*)+$/i.test(answer);
+    if(onlyLinks) answer='I found live sources, but I could not turn them into a reliable answer yet. Please try the question again.';
+    const html=esc(answer).replace(/\n/g,'<br>');
+    b.insertAdjacentHTML('beforeend',`<div class="bot-msg bot">${html}</div>`);scroll()
   }
   function typing(){const b=box();if(!b)return null;const id='botTyping-'+Date.now();b.insertAdjacentHTML('beforeend',`<div class="bot-msg bot bot-typing" id="${id}"><i></i><i></i><i></i></div>`);scroll();return id}
   function removeTyping(id){document.getElementById(id)?.remove()}
