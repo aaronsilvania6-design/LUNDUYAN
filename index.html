@@ -9062,17 +9062,6 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
     content.innerHTML=`<div class="blocked-list">${blocks.map(b=>{const u=map.get(sid(b.blocked_id))||{};const n=u.full_name||'User';return `<div class="blocked-user"><div class="blocked-user-info"><div class="blocked-avatar">${u.role==='FARMER'?'👨‍🌾':'🛒'}</div><div><button class="user-profile-link" onclick="openUserProfile('${esc(sid(b.blocked_id))}')">${esc(n)}</button><div class="blocked-user-role">${esc(u.role||'USER')}</div></div></div><button class="unblock-btn" onclick="unblockFromBlockedManager(this,'${esc(sid(b.blocked_id))}','${esc(n).replaceAll("'",'&#39;')}')">↩ Unblock</button></div>`}).join('')}</div>`;
   };
 
-  /* Give mobile users a clear place to manage their blocked accounts. */
-  const baseOpenMyProfile=window.openMyProfile;
-  if(typeof baseOpenMyProfile==='function')window.openMyProfile=async function(){
-    await baseOpenMyProfile.apply(this,arguments);
-    const box=$('myProfileContent');if(!box||box.querySelector('.mobile-blocked-management'))return;
-    const wrap=document.createElement('div');wrap.className='mobile-blocked-management';
-    wrap.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--border,#e5ebe7)';
-    wrap.innerHTML='<button type="button" class="secondary-btn" style="width:100%;min-height:44px" onclick="openBlockedAccounts()">🛡️ Manage Blocked Accounts</button>';
-    box.appendChild(wrap);
-  };
-
   /* ---------------- Role-aware LUNDUYAN AI ---------------- */
   function botSuggestions(){
     const box=document.querySelector('.bot-suggestions');if(!box)return;
@@ -9140,30 +9129,7 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
 })();
 </script>
 
-<style id="LUNDUYAN-definitive-profile-buttons">
-#absoluteManageBlocked,#LUNDUYANFinalBlockedManager,#LUNDUYANProfileBlockedManager{display:none!important}
-.mobile-blocked-management{display:block!important;width:100%!important;margin-top:12px!important;padding-top:12px!important;border-top:1px solid var(--border,#e5ebe7)!important}
-.mobile-blocked-management button{display:block!important;width:100%!important;min-height:44px!important}
-@media(min-width:701px){.profile-action-row .block-user-btn{display:block!important}}
-</style>
-<script id="LUNDUYAN-definitive-profile-buttons-js">
-(function(){
-'use strict';
-function run(){
- ['absoluteManageBlocked','LUNDUYANFinalBlockedManager','LUNDUYANProfileBlockedManager'].forEach(id=>document.getElementById(id)?.remove());
- const boxes=document.querySelectorAll('#myProfileContent .mobile-blocked-management');boxes.forEach((x,i)=>{if(i>0)x.remove()});
- const box=document.getElementById('myProfileContent'),modal=document.getElementById('myProfileModal');
- if(box&&modal&&!modal.classList.contains('hidden')&&window.currentProfile&&!box.querySelector('.mobile-blocked-management')){
-  const w=document.createElement('div');w.className='mobile-blocked-management';w.innerHTML='<button type="button" class="secondary-btn" onclick="openBlockedAccounts()">🛡️ Manage Blocked Accounts</button>';box.appendChild(w);
- }
- /* Block button must remain visible on desktop. */
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,300));else setTimeout(run,300);
-setTimeout(run,700);
-})();
-</script>
-
-<!-- FINAL: KEEP LOGOUT + KEEP ONE MANAGE BLOCKED + REMOVE TOP BLOCK DESKTOP/TABLET -->
+<!-- FINAL: ONE PROFILE ACTION BLOCK -->
 <style id="LUNDUYAN-final-profile-actions">
 @media(min-width:701px){
   .profile-action-row .block-user-btn{display:block!important}
@@ -12830,10 +12796,10 @@ function ensureProfileActions(){
  if(canModerate())add('lunduyan-moderator-btn','🛡️ Open Moderator Inbox',()=>window.openModeratorInbox?.());
  add('lunduyan-logout-btn','↪ Logout',async()=>{
    if(window.__lunduyanLoggingOut)return;
-   if(!confirm('Sigurado ka bang gusto mong lumabas sa account?'))return;
+   if(!confirm('Are you sure you want to log out?'))return;
    window.__lunduyanLoggingOut=true;
    try{if(typeof window.logout==='function')await window.logout();else await window.supabaseClient?.auth?.signOut();}
-   catch(e){window.__lunduyanLoggingOut=false;alert(e?.message||'Hindi makalabas sa account.');}
+   catch(e){window.__lunduyanLoggingOut=false;alert(e?.message||'Could not log out.');}
  });
 }
 const originalOpen=window.openMyProfile;
