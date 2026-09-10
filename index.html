@@ -2193,7 +2193,6 @@ body.modal-is-open{overscroll-behavior:none}
 .aggregation-summary{background:#f2f8f3;border-radius:16px;padding:14px;margin:14px 0}.aggregation-summary strong{color:#16833b}
 @media(max-width:700px){.quick-grid{grid-template-columns:1fr 1fr}.aggregation-grid{grid-template-columns:1fr}.aggregation-head{align-items:flex-start;flex-direction:column}.aggregation-form-grid{grid-template-columns:1fr}.aggregation-form-grid .full{grid-column:auto}.aggregation-card{padding:16px;border-radius:18px}.aggregation-actions button{flex:1 1 140px}}
 </style>
-
 <style id="LUNDUYAN-MOBILE-NAV-DEFINITIVE">
 @media (max-width:700px){
   html,body{overflow-x:hidden!important;}
@@ -2235,8 +2234,6 @@ body.modal-is-open{overscroll-behavior:none}
   window.addEventListener('resize',bootNav,{passive:true});
 })();
 </script>
-
-
 <style id="LUNDUYAN_V6_REMOVE_EMPTY_CHAT_HEADER">
 /* V6: remove the empty "Select a conversation" green header in BOTH
    phone and desktop. Keep the real header when a conversation is selected. */
@@ -2260,8 +2257,6 @@ body.modal-is-open{overscroll-behavior:none}
   }
 }
 </style>
-
-
 <style id="LUNDUYAN-V11-CLOSE-AND-MODAL-FIX">
 /* V11: unmistakable black close controls everywhere. */
 .modal .close,.bot-window .close,.chat-contacts-close,.chat-header .close,
@@ -2278,13 +2273,20 @@ body.modal-is-open{overscroll-behavior:none}
 #myProfileModal .modal-card{max-height:92vh !important;overflow:hidden !important;}
 #myProfileModal #myProfileContent{max-height:calc(92vh - 80px) !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch !important;padding-bottom:32px !important;}
 </style>
-
 <style id="LUNDUYAN-V11-AGGREGATION-SAFETY">
 .aggregation-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .aggregation-report-btn{border:1px solid #111!important;background:#fff!important;color:#111!important;border-radius:12px!important;padding:10px 14px!important;font-weight:800!important;cursor:pointer!important}
 .aggregation-report-btn:hover{background:#111!important;color:#fff!important}
 </style>
-</head>
+<style id="LUNDUYAN_SINGLE_NAV_FREEZE_FIX_CSS">
+@media(max-width:700px){
+  html{scroll-behavior:auto!important;}
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important;}
+  #mobileBottomNav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:calc(70px + env(safe-area-inset-bottom))!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;z-index:2147483000!important;transform:translateZ(0)!important;contain:layout paint!important;}
+  #mobileBottomNav .mobile-nav-item{min-width:0!important;min-height:58px!important;display:flex!important;visibility:visible!important;opacity:1!important;touch-action:manipulation!important;}
+}
+@media(min-width:701px){#mobileBottomNav{display:none!important;}}
+</style></head>
 <body>
 <!-- =======================================================
 LANDING
@@ -2538,18 +2540,18 @@ Clear
 <div class="stat-value" id="statCompleted">0</div>
 </div>
 </section>
-<section id="aggregationSection" class="section aggregation-section">
-  <div class="aggregation-head">
-    <div>
-      <div class="eyebrow">COMMUNITY</div>
-      <h2>Community Aggregations</h2><p id="aggregationRoleNote" class="aggregation-role-note">Farmers create pools, contribute harvest, and vote on the final price.</p>
-      <p>Farmers can pool their harvest together. When the target is complete, buyers can purchase the full community pool.</p>
-    </div>
-    <button id="createAggregationBtn" class="hero-primary" type="button" onclick="openAggregationRequest()">＋ Create Community Pool</button>
-  </div>
-  <div id="aggregationGrid" class="aggregation-grid">
-    <div class="aggregation-empty">Loading farmer community pools...</div>
-  </div>
+<section class="section aggregation-section" id="aggregationSection">
+<div class="aggregation-head">
+<div>
+<div class="eyebrow">COMMUNITY</div>
+<h2>Community Aggregations</h2><p class="aggregation-role-note" id="aggregationRoleNote">Farmers create pools, contribute harvest, and vote on the final price.</p>
+<p>Farmers can pool their harvest together. When the target is complete, buyers can purchase the full community pool.</p>
+</div>
+<button class="hero-primary" id="createAggregationBtn" onclick="openAggregationRequest()" type="button">＋ Create Community Pool</button>
+</div>
+<div class="aggregation-grid" id="aggregationGrid">
+<div class="aggregation-empty">Loading farmer community pools...</div>
+</div>
 </section>
 <section class="section">
 <div class="section-title">
@@ -2580,45 +2582,38 @@ Refresh
 </div>
 <div class="orders" id="orders"></div>
 </section>
-
 </main>
 </div>
 <!-- =======================================================
 COMMUNITY AGGREGATION
 ======================================================= -->
-
-
-<div id="aggregationRequestModal" class="modal hidden">
-  <div class="modal-card aggregation-modal-card">
-    <div class="profile-modal-header"><strong>Create Community Pool</strong><button class="close" type="button" onclick="closeAggregationRequest()">×</button></div>
-    <form id="aggregationRequestForm" class="aggregation-form-grid" style="padding:18px">
-      <div class="full"><label for="aggProductName">What are you pooling?</label><input id="aggProductName" required placeholder="e.g. Potato"></div>
-      <div><label for="aggTargetQty">Quantity needed</label><input id="aggTargetQty" type="number" min="0.01" step="0.01" required placeholder="1200"></div>
-      <div><label for="aggUnit">Unit</label><select id="aggUnit"><option value="KG">KG</option><option value="SACK">Sack</option><option value="TON">Ton</option><option value="BUNDLE">Bundle</option><option value="PIECE">Piece</option></select></div>
-      <div><label for="aggOfferPrice">Offer price</label><input id="aggOfferPrice" type="number" min="0" step="0.01" required placeholder="35"></div>
-      <div><label for="aggLocation">Location</label><input id="aggLocation" required placeholder="Ilocos Norte"></div>
-      
-      <div class="full"><label for="aggDescription">Additional details</label><textarea id="aggDescription" placeholder="Quality, delivery, variety, or other notes..."></textarea></div>
-      <div class="full aggregation-summary"><strong>How it works:</strong> You create the farmer pool, other farmers contribute their harvest, and contributing farmers vote on the community selling price. When the target is reached, buyers can purchase the full pooled supply.</div>
-      <div class="full aggregation-actions"><button class="secondary-btn" type="button" onclick="closeAggregationRequest()">Cancel</button><button class="hero-primary" type="submit">Create Community Pool</button></div>
-    </form>
-  </div>
+<div class="modal hidden" id="aggregationRequestModal">
+<div class="modal-card aggregation-modal-card">
+<div class="profile-modal-header"><strong>Create Community Pool</strong><button class="close" onclick="closeAggregationRequest()" type="button">×</button></div>
+<form class="aggregation-form-grid" id="aggregationRequestForm" style="padding:18px">
+<div class="full"><label for="aggProductName">What are you pooling?</label><input id="aggProductName" placeholder="e.g. Potato" required=""/></div>
+<div><label for="aggTargetQty">Quantity needed</label><input id="aggTargetQty" min="0.01" placeholder="1200" required="" step="0.01" type="number"/></div>
+<div><label for="aggUnit">Unit</label><select id="aggUnit"><option value="KG">KG</option><option value="SACK">Sack</option><option value="TON">Ton</option><option value="BUNDLE">Bundle</option><option value="PIECE">Piece</option></select></div>
+<div><label for="aggOfferPrice">Offer price</label><input id="aggOfferPrice" min="0" placeholder="35" required="" step="0.01" type="number"/></div>
+<div><label for="aggLocation">Location</label><input id="aggLocation" placeholder="Ilocos Norte" required=""/></div>
+<div class="full"><label for="aggDescription">Additional details</label><textarea id="aggDescription" placeholder="Quality, delivery, variety, or other notes..."></textarea></div>
+<div class="full aggregation-summary"><strong>How it works:</strong> You create the farmer pool, other farmers contribute their harvest, and contributing farmers vote on the community selling price. When the target is reached, buyers can purchase the full pooled supply.</div>
+<div class="full aggregation-actions"><button class="secondary-btn" onclick="closeAggregationRequest()" type="button">Cancel</button><button class="hero-primary" type="submit">Create Community Pool</button></div>
+</form>
 </div>
-
-<div id="aggregationContributionModal" class="modal hidden">
-  <div class="modal-card aggregation-modal-card">
-    <div class="profile-modal-header"><strong>Contribute to Aggregation</strong><button class="close" type="button" onclick="closeAggregationContribution()">×</button></div>
-    <form id="aggregationContributionForm" class="aggregation-form-grid" style="padding:18px">
-      <input id="aggContributionRequestId" type="hidden">
-      <div class="full" id="aggContributionInfo"></div>
-      <div class="full"><label for="aggContributionQty">Your contribution</label><input id="aggContributionQty" type="number" min="0.01" step="0.01" required placeholder="100"></div>
-      <div class="full"><label for="aggContributionPrice">Your proposed price per unit</label><input id="aggContributionPrice" type="number" min="0" step="0.01" required placeholder="35.00"></div>
-      <div class="full aggregation-actions"><button class="secondary-btn" type="button" onclick="closeAggregationContribution()">Cancel</button><button class="hero-primary" type="submit">Join Aggregation</button></div>
-    </form>
-  </div>
 </div>
-
-
+<div class="modal hidden" id="aggregationContributionModal">
+<div class="modal-card aggregation-modal-card">
+<div class="profile-modal-header"><strong>Contribute to Aggregation</strong><button class="close" onclick="closeAggregationContribution()" type="button">×</button></div>
+<form class="aggregation-form-grid" id="aggregationContributionForm" style="padding:18px">
+<input id="aggContributionRequestId" type="hidden"/>
+<div class="full" id="aggContributionInfo"></div>
+<div class="full"><label for="aggContributionQty">Your contribution</label><input id="aggContributionQty" min="0.01" placeholder="100" required="" step="0.01" type="number"/></div>
+<div class="full"><label for="aggContributionPrice">Your proposed price per unit</label><input id="aggContributionPrice" min="0" placeholder="35.00" required="" step="0.01" type="number"/></div>
+<div class="full aggregation-actions"><button class="secondary-btn" onclick="closeAggregationContribution()" type="button">Cancel</button><button class="hero-primary" type="submit">Join Aggregation</button></div>
+</form>
+</div>
+</div>
 <!-- =======================================================
 FARMER PROFILE MODAL
 ======================================================= -->
@@ -2646,7 +2641,7 @@ ADD PRODUCT MODAL
 </div>
 <form id="productForm">
 <label>Product Name</label>
-<input id="productName" placeholder="Fresh Tomatoes" required=""/>
+<input id="productName" placeholder="Fresh Tomatoes" required="">
 <label>Description</label>
 <textarea id="productDescription" placeholder="Describe your product"></textarea>
 <label>Category</label>
@@ -2659,9 +2654,9 @@ ADD PRODUCT MODAL
 <option value="Other">Other</option>
 </select>
 <label>Price</label>
-<input id="productPrice" min="0" placeholder="Price per unit" required="" step="0.01" type="number"/>
+<input id="productPrice" min="0" placeholder="Price per unit" required="" step="0.01" type="number">
 <label>Quantity</label>
-<input id="productQuantity" min="0" placeholder="Available quantity" required="" step="0.01" type="number"/>
+<input id="productQuantity" min="0" placeholder="Available quantity" required="" step="0.01" type="number">
 <label>Unit</label>
 <select id="productUnit">
 <option value="kg">kg</option>
@@ -2671,14 +2666,14 @@ ADD PRODUCT MODAL
 <option value="dozen">dozen</option>
 </select>
 <label>Location</label>
-<input id="productLocation" placeholder="Municipality / Province"/>
+<input id="productLocation" placeholder="Municipality / Province">
 <label>Product Image</label>
-<input accept="image/*" id="productImage" type="file"/>
+<input accept="image/*" id="productImage" type="file">
 <button class="primary-btn" type="submit">
 Publish Product
 </button>
 <div id="productMessage"></div>
-</form>
+</input></input></input></input></input></form>
 </div>
 </div>
 <!-- =======================================================
@@ -2694,9 +2689,9 @@ BUY MODAL
 </div>
 <div id="buyProductInfo"></div>
 <form id="buyForm">
-<input id="buyProductId" type="hidden"/>
+<input id="buyProductId" type="hidden">
 <label>Quantity</label>
-<input id="buyQuantity" min="0.01" oninput="updateBuyTotal()" required="" step="0.01" type="number" value="1"/>
+<input id="buyQuantity" min="0.01" oninput="updateBuyTotal()" required="" step="0.01" type="number" value="1">
 <div id="buyTotalPreview" style="
 margin-top:12px;
 padding:14px;
@@ -2730,7 +2725,7 @@ updates the available stock atomically, and sends the farmer a live notification
 Place Order
 </button>
 <div id="buyMessage"></div>
-</form>
+</input></input></form>
 </div>
 </div>
 <!-- =======================================================
@@ -9139,7 +9134,6 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
   },1500);
 })();
 </script>
-
 <style id="LUNDUYAN-definitive-profile-buttons">
 #absoluteManageBlocked,#LUNDUYANFinalBlockedManager,#LUNDUYANProfileBlockedManager{display:none!important}
 .mobile-blocked-management{display:block!important;width:100%!important;margin-top:12px!important;padding-top:12px!important;border-top:1px solid var(--border,#e5ebe7)!important}
@@ -9162,7 +9156,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 setTimeout(run,700);
 })();
 </script>
-
 <!-- FINAL: KEEP LOGOUT + KEEP ONE MANAGE BLOCKED + REMOVE TOP BLOCK DESKTOP/TABLET -->
 <style id="LUNDUYAN-final-profile-actions">
 @media(min-width:701px){
@@ -9669,15 +9662,10 @@ setTimeout(run,700);
   document.addEventListener('click',e=>{ if(e.target.closest('#profileModal .block-user-btn')) fix(); },true);
 })();
 </script>
-
 <script>
   document.addEventListener("DOMContentLoaded",()=>setSignupMethod("email"));
 </script>
-
-
 <!-- FINAL MOBILE NAV VISIBILITY OVERRIDE -->
-
-
 <style id="LUNDUYAN_PHONE_PERFORMANCE_FINAL">
 /* Lightweight phone navigation/performance layer.
    Keeps the existing mobile controls without polling or body-wide observers. */
@@ -9745,7 +9733,6 @@ setTimeout(run,700);
   window.addEventListener('orientationchange',function(){setTimeout(sync,100);},{passive:true});
 })();
 </script>
-
 <style id="AGRI_MESSAGE_BACK_FINAL_FIX">
 /* FINAL: Messages list = X / opened chat = — */
 #chatModal .chat-header > .close{
@@ -10380,7 +10367,6 @@ setTimeout(run,700);
   setTimeout(boot,200);
 })();
 </script>
-
 <script id="LUNDUYAN_SIGNUP_ROLE_CARDS">
 (function(){
   function wire(){
@@ -10398,12 +10384,7 @@ setTimeout(run,700);
   setTimeout(wire,1000);
 })();
 </script>
-
-
-
-
 <!-- FINAL MOBILE NAV VISIBILITY OVERRIDE -->
-
 <script id="lunduyan-aggregation-js">
 /* =========================================================
    LUNDUYAN COMMUNITY AGGREGATION
@@ -10494,7 +10475,7 @@ setTimeout(run,700);
        requires real aggregation_price_options rows in Supabase. */
     if(!options.length && String(r.status||'').toUpperCase()==='TARGET_REACHED'){
       const seen=new Set();
-      options=[...(r.contributors||[]).map(c=>Number(c.proposed_price||0)), Number(r.offer_price||0)].filter(p=>Number.isFinite(p)&&p>0&&!seen.has(p)&&seen.add(p)).map((price,i)=>({id:'pending-'+i,price,votes:0}));
+      options=(r.contributors||[]).map(c=>Number(c.proposed_price)).filter(p=>Number.isFinite(p)&&p>=0&&!seen.has(p)&&seen.add(p)).map((price,i)=>({id:'pending-'+i,price,votes:0}));
     }
     if(!poll||!options.length)return String(r.status||'').toUpperCase()==='TARGET_REACHED'?'<div class="aggregation-poll muted"><strong>🗳️ Farmer price voting</strong><br>Waiting for the farmers’ proposed prices.</div>':'<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
@@ -10520,7 +10501,7 @@ setTimeout(run,700);
       if(currentRole==='BUYER'&&status==='OPEN')action=`<span class="aggregation-waiting">Waiting for farmers · ${contributorCount} contributor${contributorCount===1?'':'s'}</span>`;
       if(status==='TARGET_REACHED'&&String(r.poll?.status||'').toUpperCase()!=='CLOSED')action=`<span class="aggregation-waiting">Price voting in progress · ${contributorCount} farmer${contributorCount===1?'':'s'}</span>`;
       if(status==='SOLD')action=`<span class="aggregation-waiting success">Community order created</span>`;
-      const contributorsHtml=contributors.map(c=>{const proposed=Number(c.proposed_price);const shownPrice=Number.isFinite(proposed)&&proposed>0?proposed:Number(r.offer_price||0);return `<div class="aggregation-contributor"><span>👨‍🌾 ${esc(c.farmer?.full_name||'Farmer')} · ₱${money(shownPrice)}/${esc(r.unit)}</span><span>${esc(c.quantity)} ${esc(r.unit)}</span></div>`;}).join('');
+      const contributorsHtml=contributors.map(c=>`<div class="aggregation-contributor"><span>👨‍🌾 ${esc(c.farmer?.full_name||'Farmer')} · ₱${money(c.proposed_price||0)}/${esc(r.unit)}</span><span>${esc(c.quantity)} ${esc(r.unit)}</span></div>`).join('');
       const creatorId=String(r.creator_id||''),creatorName=String(r.creator?.full_name||'Farmer');
       const reportCreator=(creatorId&&creatorId!==String(window.currentProfile?.id||''))?`<button type="button" class="aggregation-report-btn" onclick="reportUser('${esc(creatorId)}','${esc(creatorName).replaceAll("'","&#39;")}')">⚑ Report pool creator</button>`:'';
       return `<article class="aggregation-card"><div class="aggregation-card-top"><div><div class="aggregation-product">🌾 ${esc(String(r.product_name||'').toUpperCase())} COMMUNITY POOL</div><div class="aggregation-meta">Created by: ${esc(creatorName)} · ${esc(r.location||'Location not set')}</div></div><span class="aggregation-status ${statusClass}">${esc(status.replaceAll('_',' '))}</span></div><div class="aggregation-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${esc(target)}" aria-valuenow="${esc(total)}"><span style="width:${pct}%"></span></div><div class="aggregation-numbers"><strong>${esc(total)} / ${esc(target)} ${esc(r.unit)}</strong><span>${esc(remaining)} ${esc(r.unit)} remaining</span></div><div class="aggregation-pool-stats"><span>👨‍🌾 <b>${contributorCount}</b> farmer${contributorCount===1?'':'s'} contributing</span><span>🎯 ${Math.round(pct)}% complete</span></div><div class="aggregation-price">₱${money(displayedPrice)} / ${esc(r.unit)} ${String(r.poll?.status||'').toUpperCase()==='OPEN'?'· starting price':''}</div><div class="aggregation-contributors">${contributorsHtml||'<div class="aggregation-meta">No farmer contributions yet.</div>'}</div>${renderPricePoll(r)}<div class="aggregation-actions">${action}</div>${reportCreator}</article>`;
@@ -10627,7 +10608,6 @@ setTimeout(run,700);
   document.addEventListener('DOMContentLoaded',()=>{wireForms();setTimeout(()=>{wireForms();if(currentProfile){loadAggregations();if(typeof window.loadOrders==='function')window.loadOrders();}},700);});
 })();
 </script>
-
 <style id="LUNDUYAN_FINAL_V2_CLEAN_PATCH">
 /* =========================================================
    LUNDUYAN FINAL V2 — MOBILE + AUTH + COMMUNITY
@@ -10671,7 +10651,6 @@ setTimeout(run,700);
 .aggregation-pool-stats b{color:var(--green,#16833b);font-size:14px;}
 @media(max-width:700px){#aggregationSection{margin-bottom:24px!important;} .aggregation-numbers{font-size:12px;} .aggregation-card{overflow:hidden;}}
 </style>
-
 <script id="LUNDUYAN_LITERAL_NEWLINE_CLEANUP">
 (function(){
   function clean(root){
@@ -10682,8 +10661,6 @@ setTimeout(run,700);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>clean(document.body)); else clean(document.body);
 })();
 </script>
-
-
 <!-- LUNDUYAN FINAL STABILITY FIX: mobile nav + farmer aggregation CTA -->
 <style id="LUNDUYAN_FINAL_STABILITY_CSS">
 @media (max-width:700px){
@@ -10708,114 +10685,6 @@ setTimeout(run,700);
 }
 @media(min-width:701px){#mobileBottomNav{display:none!important;}}
 </style>
-<script id="LUNDUYAN_FINAL_STABILITY_JS">
-(function(){
-  'use strict';
-  if(window.__lunduyanFinalStabilityFix)return;
-  window.__lunduyanFinalStabilityFix=true;
-  const $=id=>document.getElementById(id);
-  const isLoggedIn=()=>{
-    const app=$('app');
-    return !!(app && !app.classList.contains('hidden') && (window.currentProfile||window.currentUser));
-  };
-  const isFarmer=()=>String(window.currentProfile?.role||'').trim().toUpperCase()==='FARMER';
-
-  function ensureNav(){
-    if(window.innerWidth>700 || !isLoggedIn())return;
-    let nav=$('mobileBottomNav');
-    if(!nav){
-      nav=document.createElement('nav');
-      nav.id='mobileBottomNav';
-      nav.className='mobile-bottom-nav';
-      nav.setAttribute('aria-label','Mobile navigation');
-      nav.innerHTML=''+
-        '<button class="mobile-nav-item active" data-mobile-nav="home" type="button"><span class="mobile-nav-icon">⌂</span><span class="mobile-nav-label">Home</span></button>'+
-        '<button class="mobile-nav-item" data-mobile-nav="market" type="button"><span class="mobile-nav-icon" id="mobileMarketIcon">🛒</span><span class="mobile-nav-label" id="mobileMarketLabel">Marketplace</span></button>'+
-        '<button class="mobile-nav-item" data-mobile-nav="chat" type="button"><span class="mobile-nav-icon">💬</span><span class="mobile-nav-label">Messages</span><span id="mobileChatBadge" class="mobile-nav-badge hidden">0</span></button>'+
-        '<button class="mobile-nav-item" data-mobile-nav="notifications" type="button"><span class="mobile-nav-icon">🔔</span><span class="mobile-nav-label">Alerts</span><span id="mobileNotifBadge" class="mobile-nav-badge hidden">0</span></button>'+
-        '<button class="mobile-nav-item" data-mobile-nav="profile" type="button"><span class="mobile-nav-icon">👤</span><span class="mobile-nav-label">Profile</span></button>';
-      document.body.appendChild(nav);
-    }
-    nav.style.setProperty('display','grid','important');
-    nav.style.setProperty('visibility','visible','important');
-    nav.style.setProperty('opacity','1','important');
-    const label=$('mobileMarketLabel'),icon=$('mobileMarketIcon');
-    if(label)label.textContent=isFarmer()?'My Products':'Marketplace';
-    if(icon)icon.textContent=isFarmer()?'🌾':'🛒';
-    if(nav.dataset.lunduyanStableBound!=='1'){
-      nav.dataset.lunduyanStableBound='1';
-      nav.addEventListener('click',async function(e){
-        const b=e.target.closest('[data-mobile-nav]');
-        if(!b)return;
-        e.preventDefault();
-        nav.querySelectorAll('.mobile-nav-item').forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-        const action=b.dataset.mobileNav;
-        if(action==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
-        if(action==='market'){
-          const target=$('products');
-          target?.scrollIntoView({behavior:'smooth',block:'start'});
-          if(typeof loadProducts==='function')Promise.resolve().then(()=>loadProducts()).catch(()=>{});
-          return;
-        }
-        if(action==='chat'){if(typeof openChat==='function')await openChat();return;}
-        if(action==='notifications'){if(typeof toggleNotifications==='function')toggleNotifications();return;}
-        if(action==='profile'){if(typeof openMyProfile==='function')await openMyProfile();return;}
-      });
-    }
-  }
-
-  function ensureAggregationCTA(){
-    const section=$('aggregationSection'),btn=$('createAggregationBtn'),note=$('aggregationRoleNote');
-    if(!section||!btn)return;
-    section.style.removeProperty('display');
-    section.style.setProperty('display','block','important');
-    if(isFarmer()){
-      btn.style.setProperty('display','inline-flex','important');
-      btn.style.setProperty('visibility','visible','important');
-      btn.style.setProperty('opacity','1','important');
-      btn.textContent='＋ Create Farmer Pool';
-      if(note)note.textContent='Farmers create pools, contribute harvest, and vote on the final price.';
-    }else{
-      btn.style.setProperty('display','none','important');
-      if(note)note.textContent='Buyers wait for a completed farmer pool, then buy the entire pooled supply.';
-    }
-  }
-
-  function sync(){
-    if(isLoggedIn()){
-      ensureNav();
-      ensureAggregationCTA();
-    }else{
-      const nav=$('mobileBottomNav');
-      if(nav)nav.style.setProperty('display','none','important');
-    }
-  }
-
-  function bind(){
-    sync();
-    const app=$('app');
-    if(app&&!app.dataset.lunduyanStableObserver){
-      app.dataset.lunduyanStableObserver='1';
-      new MutationObserver(sync).observe(app,{attributes:true,attributeFilter:['class']});
-    }
-    const auth=$('authScreen');
-    if(auth&&!auth.dataset.lunduyanStableObserver){
-      auth.dataset.lunduyanStableObserver='1';
-      new MutationObserver(sync).observe(auth,{attributes:true,attributeFilter:['class']});
-    }
-    if(window.supabaseClient?.auth?.onAuthStateChange && !window.__lunduyanStableAuthBound){
-      window.__lunduyanStableAuthBound=true;
-      window.supabaseClient.auth.onAuthStateChange(()=>setTimeout(sync,50));
-    }
-    /* Profile data can be populated shortly after auth. A short startup retry handles that race only. */
-    let tries=0;
-    const retry=()=>{sync();if(++tries<20 && !window.currentProfile)setTimeout(retry,250);};
-    setTimeout(retry,50);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
-})();
-</script>
 
 <style id="LUNDUYAN-FINAL-COMPATIBILITY-FIX">
 /* Final LUNDUYAN cleanup: stable mobile nav + auth logo visibility + aggregation CTA */
@@ -10850,60 +10719,6 @@ setTimeout(run,700);
   #products{scroll-margin-top:82px!important;}
 }
 </style>
-<script id="LUNDUYAN-FINAL-COMPATIBILITY-FIX-JS">
-(function(){
- 'use strict';
- if(window.__LUNDUYAN_FINAL_COMPATIBILITY_FIX)return;
- window.__LUNDUYAN_FINAL_COMPATIBILITY_FIX=true;
- const $=id=>document.getElementById(id);
- function loggedIn(){return !!(window.currentProfile||window.currentUser||($('app')&&!$('app').classList.contains('hidden')));}
- function farmer(){return String(window.currentProfile?.role||'').toUpperCase()==='FARMER';}
- function ensureMobileNav(){
-   if(innerWidth>700||!loggedIn())return;
-   let n=$('mobileBottomNav');
-   if(!n){
-     n=document.createElement('nav');n.id='mobileBottomNav';n.className='mobile-bottom-nav';
-     n.innerHTML='<button type="button" class="mobile-nav-item" data-mobile-nav="home"><span>⌂</span><small>Home</small></button><button type="button" class="mobile-nav-item" data-mobile-nav="market"><span id="lunduyanMobileMarketIcon">🛒</span><small id="lunduyanMobileMarketLabel">Marketplace</small></button><button type="button" class="mobile-nav-item" data-mobile-nav="chat"><span>💬</span><small>Messages</small></button><button type="button" class="mobile-nav-item" data-mobile-nav="notifications"><span>🔔</span><small>Alerts</small></button><button type="button" class="mobile-nav-item" data-mobile-nav="profile"><span>👤</span><small>Profile</small></button>';
-     document.body.appendChild(n);
-   }
-   n.style.setProperty('display','grid','important');n.style.setProperty('visibility','visible','important');n.style.setProperty('opacity','1','important');
-   const l=$('lunduyanMobileMarketLabel'),i=$('lunduyanMobileMarketIcon');
-   if(l)l.textContent=farmer()?'My Products':'Marketplace'; if(i)i.textContent=farmer()?'🌾':'🛒';
-   if(n.dataset.finalBound!=='1'){
-     n.dataset.finalBound='1';
-     n.addEventListener('click',async e=>{
-       const b=e.target.closest('[data-mobile-nav]');if(!b)return;
-       const a=b.dataset.mobileNav;
-       n.querySelectorAll('.mobile-nav-item').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-       if(a==='home'){scrollTo({top:0,behavior:'smooth'});return;}
-       if(a==='market'){
-         // Instant scroll first; refresh product data without blocking navigation.
-         $("products")?.scrollIntoView({behavior:'smooth',block:'start'});
-         if(typeof loadProducts==='function')Promise.resolve().then(()=>loadProducts()).catch(()=>{});
-         return;
-       }
-       if(a==='chat'){if(typeof openChat==='function')return openChat(); if(typeof toggleMessages==='function')return toggleMessages();}
-       if(a==='notifications'){if(typeof toggleNotifications==='function')toggleNotifications();return;}
-       if(a==='profile'){if(typeof openMyProfile==='function')return openMyProfile();}
-     },true);
-   }
- }
- function ensureFarmerAggregation(){
-   const s=$('aggregationSection'),b=$('createAggregationBtn');if(!s||!b)return;
-   s.style.setProperty('display','block','important');s.style.setProperty('visibility','visible','important');
-   if(farmer()){
-     b.style.setProperty('display','inline-flex','important');b.style.setProperty('visibility','visible','important');b.style.setProperty('opacity','1','important');
-     b.textContent='＋ Create Farmer Pool';
-     b.onclick=()=>{if(typeof openAggregationRequest==='function')openAggregationRequest();};
-   }else b.style.setProperty('display','none','important');
- }
- function run(){ensureMobileNav();ensureFarmerAggregation();}
- run();setTimeout(run,150);setTimeout(run,500);setTimeout(run,1200);
- if(window.supabaseClient?.auth?.onAuthStateChange)window.supabaseClient.auth.onAuthStateChange(()=>setTimeout(run,100));
- setInterval(run,1800);
-})();
-</script>
-
 
 <style id="LUNDUYAN-AI-FINAL-INTELLIGENT">
 .bot-window{z-index:2147483000!important}
@@ -11012,8 +10827,6 @@ setTimeout(run,700);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,200));else setTimeout(boot,200);
 })();
 </script>
-
-
 <style id="LUNDUYAN-final-phone-actions">
 @media(max-width:700px){
   /* Keep the five phone buttons visible and above everything else. */
@@ -11024,27 +10837,6 @@ setTimeout(run,700);
   #aggregationSection{scroll-margin-top:82px!important;}
 }
 </style>
-<script id="LUNDUYAN-final-phone-actions-js">
-(function(){
-  'use strict';
-  function farmer(){return String(window.currentProfile?.role||'').toUpperCase()==='FARMER';}
-  function fixPhoneNav(){
-    if(window.innerWidth>700)return;
-    const nav=document.getElementById('mobileBottomNav');
-    if(!nav||!window.currentProfile)return;
-    nav.style.setProperty('display','grid','important');
-    nav.style.setProperty('visibility','visible','important');
-    const label=document.getElementById('mobileMarketLabel')||document.getElementById('lunduyanMobileMarketLabel');
-    const icon=document.getElementById('mobileMarketIcon')||document.getElementById('lunduyanMobileMarketIcon');
-    if(label)label.textContent=farmer()?'My Products':'Marketplace';
-    if(icon)icon.textContent=farmer()?'🌾':'🛒';
-  }
-  function run(){fixPhoneNav();}
-  run();
-  setTimeout(run,100);setTimeout(run,400);setTimeout(run,1000);
-  if(window.supabaseClient?.auth?.onAuthStateChange)window.supabaseClient.auth.onAuthStateChange(()=>setTimeout(run,100));
-})();
-</script>
 
 <!-- LUNDUYAN FINAL CLEAN FIX: farmer aggregation CTA + one-AI-chat-at-a-time -->
 <style id="LUNDUYAN_FINAL_CLEAN_FIX_CSS">
@@ -11053,39 +10845,6 @@ setTimeout(run,700);
 @media(max-width:700px){#aggregationSection .aggregation-head{flex-direction:column!important;align-items:stretch!important}#aggregationSection #createAggregationBtn{width:100%!important;min-height:48px!important;justify-content:center!important}}
 #botForm.ai-busy #botInput{opacity:.65}
 </style>
-<script id="LUNDUYAN_FINAL_CLEAN_FIX_JS">
-(function(){
-'use strict';
-if(window.__LUNDUYAN_FINAL_CLEAN_FIX__)return;
-window.__LUNDUYAN_FINAL_CLEAN_FIX__=true;
-function farmer(){return String(window.currentProfile?.role||'').trim().toUpperCase()==='FARMER'}
-function fixAggregationButton(){
- const section=document.getElementById('aggregationSection'),btn=document.getElementById('createAggregationBtn');
- if(!section||!btn)return;
- section.style.setProperty('display','block','important');section.style.setProperty('visibility','visible','important');
- if(farmer()){btn.hidden=false;btn.disabled=false;btn.textContent='＋ Create Farmer Pool';btn.style.setProperty('display','inline-flex','important');btn.style.setProperty('visibility','visible','important');btn.style.setProperty('opacity','1','important');btn.onclick=function(e){e.preventDefault();if(typeof window.openAggregationRequest==='function')window.openAggregationRequest()}}
- else{btn.hidden=true;btn.style.setProperty('display','none','important')}
-}
-function removeDuplicateAggregationButtons(){
- const section=document.getElementById('aggregationSection');if(!section)return;
- const primary=document.getElementById('createAggregationBtn');
- [...section.querySelectorAll('button')].filter(b=>b!==primary&&/create (farmer )?(community )?pool|create aggregation/i.test(b.textContent||'')).forEach(b=>b.remove());
-}
-function boot(){removeDuplicateAggregationButtons();fixAggregationButton()}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-setTimeout(boot,150);setTimeout(boot,500);setTimeout(boot,1200);setInterval(boot,2000);
-
-/* AI: one request at a time. The Send button and quick prompts stay disabled until the answer returns. */
-window.__setLunduAIbusy=function(v){
- const form=document.getElementById('botForm'),input=document.getElementById('botInput');
- if(form)form.classList.toggle('ai-busy',!!v);
- if(input)input.disabled=!!v;
- if(form){const b=form.querySelector('button[type="submit"]');if(b){b.disabled=!!v;b.textContent=v?'Thinking…':'Send'}}
- document.querySelectorAll('.bot-suggestions button').forEach(b=>b.disabled=!!v);
-};
-})();
-</script>
-
 
 <!-- LUNDUYAN EXACT-UPLOAD FINAL AGGREGATION + MOBILE CHAT FIX -->
 <style id="LUNDUYAN_EXACT_FINAL_FIX_CSS">
@@ -11100,75 +10859,6 @@ window.__setLunduAIbusy=function(v){
     #mobileBottomNav{z-index:2147483000!important}
   }
 </style>
-<script id="LUNDUYAN_EXACT_FINAL_FIX_JS">
-(function(){
-  'use strict';
-  if(window.__LUNDUYAN_EXACT_FINAL_FIX__) return;
-  window.__LUNDUYAN_EXACT_FINAL_FIX__=true;
-
-  function role(){
-    try{
-      var p=(typeof currentProfile!=='undefined' ? currentProfile : null) || window.currentProfile;
-      return String(p && p.role || '').trim().toUpperCase();
-    }catch(e){ return ''; }
-  }
-  function farmer(){ return role()==='FARMER'; }
-  function button(){ return document.getElementById('createAggregationBtn'); }
-
-  function syncAggregation(){
-    var section=document.getElementById('aggregationSection');
-    var b=button();
-    if(!section || !b) return;
-    section.style.setProperty('display','block','important');
-    section.style.setProperty('visibility','visible','important');
-    if(farmer()){
-      b.hidden=false;
-      b.disabled=false;
-      b.removeAttribute('aria-hidden');
-      b.textContent='🤝 Create Farmer Pool';
-      b.style.setProperty('display','inline-flex','important');
-      b.style.setProperty('visibility','visible','important');
-      b.style.setProperty('opacity','1','important');
-      if(!b.dataset.exactAggregationBound){
-        b.dataset.exactAggregationBound='1';
-        b.onclick=function(e){
-          e.preventDefault();
-          if(typeof window.openAggregationRequest==='function') window.openAggregationRequest();
-        };
-      }
-    }else{
-      b.hidden=true;
-      b.setAttribute('aria-hidden','true');
-      b.style.setProperty('display','none','important');
-    }
-  }
-
-  function sync(){
-    syncAggregation();
-  }
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync,{once:true});
-  else sync();
-  [100,300,600,1000,1500,2500,4000].forEach(function(ms){setTimeout(sync,ms);});
-  setInterval(sync,1000);
-
-  /* Keep mobile Messages above the bottom nav and prevent the nav from stealing taps. */
-  function syncMessages(){
-    var modal=document.getElementById('messagesModal');
-    var nav=document.getElementById('mobileBottomNav');
-    if(!modal) return;
-    var open=!modal.classList.contains('hidden');
-    if(open){
-      modal.style.setProperty('z-index','2147483600','important');
-      if(nav){nav.style.setProperty('z-index','2147483000','important');nav.style.pointerEvents='none';}
-    }else if(nav){
-      nav.style.pointerEvents='auto';
-    }
-  }
-  setInterval(syncMessages,250);
-  syncMessages();
-})();
-</script>
 
 <!-- LUNDUYAN V2: EXCLUSIVE NAVIGATION + WORKING MESSAGES -->
 <style id="LUNDUYAN_V2_EXCLUSIVE_NAV_CSS">
@@ -11181,184 +10871,6 @@ window.__setLunduAIbusy=function(v){
     #mobileBottomNav.nav-locked{pointer-events:auto!important;opacity:1!important;}
   }
 </style>
-<script id="LUNDUYAN_V2_EXCLUSIVE_NAV_JS">
-(function(){
-  'use strict';
-  if(window.__LUNDUYAN_V2_EXCLUSIVE_NAV__)return;
-  window.__LUNDUYAN_V2_EXCLUSIVE_NAV__=true;
-
-  const NAV_ID='mobileBottomNav';
-  const NAV_ACTIONS=['home','market','chat','notifications','profile'];
-  const PANEL_IDS=[
-    'notificationPanel','botWindow','chatModal','profileModal','myProfileModal',
-    'blockedAccountsModal','buyModal','orderDetailsModal','addProductModal',
-    'reviewModal','reviewModalOverlay','aggregationRequestModal','farmerProfileModal'
-  ];
-
-  const $=id=>document.getElementById(id);
-  const openEl=el=>!!el && !el.classList.contains('hidden');
-
-  function allPanels(){
-    const known=PANEL_IDS.map($).filter(Boolean);
-    document.querySelectorAll('.modal:not(.hidden), #notificationPanel:not(.hidden), #botWindow:not(.hidden)')
-      .forEach(el=>{if(!known.includes(el))known.push(el)});
-    return known;
-  }
-
-  function closeEverything(except){
-    allPanels().forEach(el=>{
-      if(el!==except)el.classList.add('hidden');
-    });
-    try{$('mobileBottomNav')?.classList.remove('nav-locked')}catch(_){ }
-  }
-
-  function setActive(action){
-    const nav=$(NAV_ID); if(!nav)return;
-    nav.querySelectorAll('[data-mobile-nav]').forEach(b=>b.classList.toggle('active',b.dataset.mobileNav===action));
-  }
-
-  async function openMessages(){
-    closeEverything($('chatModal'));
-    const fn=window.openChat;
-    if(typeof fn==='function'){
-      try{await fn();}catch(err){console.error('LUNDUYAN Messages:',err);}
-    }else{
-      $('chatModal')?.classList.remove('hidden');
-    }
-    const modal=$('chatModal');
-    if(modal){
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden','false');
-      $('mobileBottomNav')?.classList.remove('nav-locked');
-    }
-    if(typeof window.loadConversations==='function'){
-      try{await window.loadConversations();}catch(_){ }
-    }
-    try{window.ensureLunduChatUI?.();}catch(_){ }
-  }
-
-  async function openAction(action){
-    if(!NAV_ACTIONS.includes(action))return;
-    const nav=$(NAV_ID);
-    if(nav)nav.querySelectorAll('[data-mobile-nav]').forEach(b=>b.classList.remove('active'));
-    const btn=nav?.querySelector('[data-mobile-nav="'+action+'"]');
-    btn?.classList.add('active');
-
-    if(action==='home'){
-      closeEverything(null);
-      window.scrollTo({top:0,behavior:'smooth'});
-      return;
-    }
-    if(action==='market'){
-      closeEverything(null);
-      const target=$('products');
-      target?.scrollIntoView({behavior:'smooth',block:'start'});
-      if(typeof window.loadProducts==='function')Promise.resolve().then(()=>window.loadProducts()).catch(()=>{});
-      return;
-    }
-    if(action==='chat'){await openMessages();return;}
-    if(action==='notifications'){
-      const target=$('notificationPanel');
-      closeEverything(target);
-      if(typeof window.toggleNotifications==='function')window.toggleNotifications();
-      else target?.classList.remove('hidden');
-      return;
-    }
-    if(action==='profile'){
-      const target=$('myProfileModal');
-      closeEverything(target);
-      if(typeof window.openMyProfile==='function')await window.openMyProfile();
-      else target?.classList.remove('hidden');
-    }
-  }
-
-  /* Replace the existing mobile-nav node so all earlier competing listeners are removed. */
-  function installCleanNav(){
-    const old=$(NAV_ID);
-    if(!old)return;
-    if(old.dataset.lunduyanV2Installed==='1')return;
-
-    const nav=old.cloneNode(true);
-    nav.dataset.lunduyanV2Installed='1';
-    nav.removeAttribute('data-bound');
-    nav.removeAttribute('data-finalBound');
-    nav.removeAttribute('data-v2Market');
-    nav.removeAttribute('data-lunduyan-stable-bound');
-    old.replaceWith(nav);
-
-    nav.addEventListener('click',async e=>{
-      const b=e.target.closest('[data-mobile-nav]');
-      if(!b || !nav.contains(b))return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      await openAction(b.dataset.mobileNav);
-    },true);
-
-    nav.querySelectorAll('[data-mobile-nav]').forEach(b=>b.type='button');
-  }
-
-  /* Desktop and normal buttons: close every other panel BEFORE opening the clicked one. */
-  function installExclusiveButtonGuard(){
-    document.addEventListener('click',function(e){
-      const btn=e.target.closest('button,[role="button"],a');
-      if(!btn || btn.closest('#'+NAV_ID))return;
-      const action=(btn.getAttribute('onclick')||'').replace(/\s/g,'');
-      let target=null;
-      if(action.includes('openChat(') || btn.classList.contains('nav-chat-btn'))target=$('chatModal');
-      else if(action.includes('toggleNotifications('))target=$('notificationPanel');
-      else if(action.includes('toggleLUNDUYANAI('))target=$('botWindow');
-      else if(action.includes('openMyProfile('))target=$('myProfileModal');
-      else if(action.includes('openBlockedAccounts('))target=$('blockedAccountsModal');
-      else if(action.includes('openBuyModal('))target=$('buyModal');
-      else if(action.includes('openAddProduct('))target=$('addProductModal');
-      else if(action.includes('openAggregationRequest('))target=$('aggregationRequestModal');
-      if(target)closeEverything(target);
-    },true);
-  }
-
-  /* If Messages is closed, restore nav interaction. */
-  function syncChatLock(){
-    const modal=$('chatModal'),nav=$(NAV_ID);
-    if(!modal||!nav)return;
-    nav.classList.remove('nav-locked');
-  }
-
-  /* Ensure Messages always has a visible chat area and composer when a conversation is selected. */
-  function ensureChatUI(){
-    const modal=$('chatModal'); if(!modal)return;
-    const win=$('chatWindow'); if(!win)return;
-    let form=$('chatForm');
-    if(!form){
-      form=document.createElement('form');form.id='chatForm';form.className='chat-input';
-      form.innerHTML='<input id="chatInput" autocomplete="off" placeholder="Type a message..."><button type="submit">Send</button>';
-      win.appendChild(form);
-      if(typeof window.sendMessage==='function')form.addEventListener('submit',e=>{e.preventDefault();window.sendMessage();});
-    }
-    const input=$('chatInput'),send=form.querySelector('button[type="submit"]');
-    if(input){input.style.setProperty('display','block','important');input.style.setProperty('visibility','visible','important');}
-    if(send){send.style.setProperty('display','block','important');send.style.setProperty('visibility','visible','important');}
-  }
-  window.ensureLunduChatUI=ensureChatUI;
-
-  function boot(){
-    installCleanNav();
-    installExclusiveButtonGuard();
-    ensureChatUI();
-    if(typeof window.wireLunduStableChatForm==='function')window.wireLunduStableChatForm();
-    syncChatLock();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,250));
-  else setTimeout(boot,250);
-  setTimeout(boot,800);
-  setTimeout(boot,1800);
-
-  /* Re-install only if another legacy script actually replaces the nav. */
-  new MutationObserver(()=>{if($(NAV_ID) && $(NAV_ID).dataset.lunduyanV2Installed!=='1')installCleanNav();syncChatLock();})
-    .observe(document.body,{childList:true,subtree:true});
-})();
-</script>
-
 
 <!-- LUNDUYAN V4 CHAT COMPOSER VISIBILITY FIX -->
 <style id="LUNDUYAN_V4_CHAT_FIX_CSS">
@@ -11393,8 +10905,6 @@ window.__setLunduAIbusy=function(v){
  setInterval(fix,500);
 })();
 </script>
-
-
 <!-- LUNDUYAN V5: REAL MOBILE CHAT COMPOSER / TYPE AREA -->
 <style id="LUNDUYAN_V5_REAL_CHAT_COMPOSER_CSS">
 /* The Messages screen must behave like a real chat app:
@@ -11651,8 +11161,6 @@ window.__setLunduAIbusy=function(v){
   new MutationObserver(function(){ensureRealComposer();}).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
-
-
 <!-- LUNDUYAN V8: RESTORE ONE CLOSE BUTTON ON CONVERSATIONS LIST -->
 <style id="LUNDUYAN_V8_MESSAGES_CLOSE_FIX">
 #chatModal .conversation-list .chat-list-header .chat-contacts-close{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;}
@@ -11677,7 +11185,6 @@ window.__setLunduAIbusy=function(v){
   setTimeout(restoreMessagesClose,500);
 })();
 </script>
-
 <!-- LUNDUYAN V7: FORCE REMOVE EMPTY "SELECT A CONVERSATION" HEADER -->
 <style id="LUNDUYAN_V7_REMOVE_EMPTY_HEADER_FORCE">
 /* The empty green header must NEVER appear when no conversation is selected.
@@ -11743,8 +11250,6 @@ window.__setLunduAIbusy=function(v){
   new MutationObserver(function(){syncEmptyHeader();}).observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
 </script>
-
-
 <!-- =========================================================
  LUNDUYAN FINAL POLISH / PROFILE / MODERATION LAYER
  ========================================================= -->
@@ -11923,70 +11428,67 @@ window.__setLunduAIbusy=function(v){
     .lunduyan-inbox-body{max-height:calc(100dvh - 65px)}
   }
 </style>
-
 <!-- Feedback / report to moderators -->
-<div class="modal hidden" id="moderationFeedbackModal" aria-hidden="true">
-  <div class="modal-card">
-    <div class="lunduyan-moderation-head">
-      <div style="display:flex;justify-content:space-between;gap:15px;align-items:flex-start">
-        <div>
-          <h2>Help &amp; Safety</h2>
-          <p>Send feedback to LUNDUYAN moderators or report an account. Your message helps keep the community safe.</p>
-        </div>
-        <button class="close" type="button" onclick="closeModerationFeedback()" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3)">×</button>
-      </div>
-    </div>
-    <div class="lunduyan-moderation-body">
-      <div class="lunduyan-choice-row">
-        <button type="button" class="lunduyan-choice active" id="moderationTypeFeedback" onclick="setModerationType('FEEDBACK')">💡 General Feedback</button>
-        <button type="button" class="lunduyan-choice" id="moderationTypeReport" onclick="setModerationType('REPORT')">⚑ Report an Account</button>
-      </div>
-      <div id="moderationFeedbackFields">
-        <label for="moderationSubject">Subject</label>
-        <input id="moderationSubject" maxlength="120" placeholder="What would you like to tell us?">
-        <label for="moderationMessage">Message</label>
-        <textarea id="moderationMessage" maxlength="2000" rows="7" placeholder="Describe the issue, suggestion, or experience..."></textarea>
-      </div>
-      <div id="moderationReportFields" class="hidden">
-        <label for="moderationReportedUser">Account to report</label>
-        <input id="moderationReportedUser" maxlength="120" placeholder="Enter the user's name or account ID">
-        <label for="moderationReportReason">Reason</label>
-        <select id="moderationReportReason">
-          <option value="Spam">Spam</option>
-          <option value="Scam or suspicious activity">Scam or suspicious activity</option>
-          <option value="Harassment or abuse">Harassment or abuse</option>
-          <option value="Fake account">Fake account</option>
-          <option value="Inappropriate content">Inappropriate content</option>
-          <option value="Other">Other</option>
-        </select>
-        <label for="moderationReportMessage">Details</label>
-        <textarea id="moderationReportMessage" maxlength="2000" rows="5" placeholder="What happened? Include useful details, but never share passwords or payment information."></textarea>
-      </div>
-      <div id="moderationFeedbackStatus"></div>
-      <div class="lunduyan-moderation-actions">
-        <button type="button" class="secondary-btn" onclick="closeModerationFeedback()">Cancel</button>
-        <button type="button" class="primary-btn" id="moderationSubmitBtn" onclick="submitModerationMessage()">Send to Moderators</button>
-      </div>
-    </div>
-  </div>
+<div aria-hidden="true" class="modal hidden" id="moderationFeedbackModal">
+<div class="modal-card">
+<div class="lunduyan-moderation-head">
+<div style="display:flex;justify-content:space-between;gap:15px;align-items:flex-start">
+<div>
+<h2>Help &amp; Safety</h2>
+<p>Send feedback to LUNDUYAN moderators or report an account. Your message helps keep the community safe.</p>
 </div>
-
+<button class="close" onclick="closeModerationFeedback()" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3)" type="button">×</button>
+</div>
+</div>
+<div class="lunduyan-moderation-body">
+<div class="lunduyan-choice-row">
+<button class="lunduyan-choice active" id="moderationTypeFeedback" onclick="setModerationType('FEEDBACK')" type="button">💡 General Feedback</button>
+<button class="lunduyan-choice" id="moderationTypeReport" onclick="setModerationType('REPORT')" type="button">⚑ Report an Account</button>
+</div>
+<div id="moderationFeedbackFields">
+<label for="moderationSubject">Subject</label>
+<input id="moderationSubject" maxlength="120" placeholder="What would you like to tell us?"/>
+<label for="moderationMessage">Message</label>
+<textarea id="moderationMessage" maxlength="2000" placeholder="Describe the issue, suggestion, or experience..." rows="7"></textarea>
+</div>
+<div class="hidden" id="moderationReportFields">
+<label for="moderationReportedUser">Account to report</label>
+<input id="moderationReportedUser" maxlength="120" placeholder="Enter the user's name or account ID"/>
+<label for="moderationReportReason">Reason</label>
+<select id="moderationReportReason">
+<option value="Spam">Spam</option>
+<option value="Scam or suspicious activity">Scam or suspicious activity</option>
+<option value="Harassment or abuse">Harassment or abuse</option>
+<option value="Fake account">Fake account</option>
+<option value="Inappropriate content">Inappropriate content</option>
+<option value="Other">Other</option>
+</select>
+<label for="moderationReportMessage">Details</label>
+<textarea id="moderationReportMessage" maxlength="2000" placeholder="What happened? Include useful details, but never share passwords or payment information." rows="5"></textarea>
+</div>
+<div id="moderationFeedbackStatus"></div>
+<div class="lunduyan-moderation-actions">
+<button class="secondary-btn" onclick="closeModerationFeedback()" type="button">Cancel</button>
+<button class="primary-btn" id="moderationSubmitBtn" onclick="submitModerationMessage()" type="button">Send to Moderators</button>
+</div>
+</div>
+</div>
+</div>
 <!-- Moderator inbox; only shown to MODERATOR/ADMIN roles -->
-<div class="modal hidden" id="moderatorInboxModal" aria-hidden="true">
-  <div class="modal-card">
-    <div class="modal-header" style="padding:16px 20px;margin:0;border-bottom:1px solid var(--border)">
-      <div>
-        <h2>Moderator Inbox</h2>
-        <div style="font-size:12px;color:var(--muted);margin-top:3px">User feedback and safety reports</div>
-      </div>
-      <button class="close" type="button" onclick="closeModeratorInbox()">×</button>
-    </div>
-    <div class="lunduyan-inbox-body" id="moderatorInboxContent">
-      <div class="empty">Loading moderation messages...</div>
-    </div>
-  </div>
+<div aria-hidden="true" class="modal hidden" id="moderatorInboxModal">
+<div class="modal-card">
+<div class="modal-header" style="padding:16px 20px;margin:0;border-bottom:1px solid var(--border)">
+<div>
+<h2>Moderator Inbox</h2>
+<div style="font-size:12px;color:var(--muted);margin-top:3px">User feedback and safety reports</div>
 </div>
-
+<button class="close" onclick="closeModeratorInbox()" type="button">×</button>
+</div>
+<div class="lunduyan-inbox-body" id="moderatorInboxContent">
+<div class="empty">Loading moderation messages...</div>
+</div>
+</div>
+</div>
 <script id="LUNDUYAN_FINAL_PROFILE_MODERATION_JS">
 (function(){
   'use strict';
@@ -12180,8 +11682,6 @@ window.__setLunduAIbusy=function(v){
   });
 })();
 </script>
-
-
 <!-- =========================================================
  LUNDUYAN FINAL POLISH / STABILITY PASS
  ========================================================= -->
@@ -12237,8 +11737,6 @@ window.__setLunduAIbusy=function(v){
   .lunduyan-profile-actions{grid-template-columns:1fr!important}
 }
 </style>
-
-
 <!-- =========================================================
  LUNDUYAN FINAL V10 — STABLE UI / ONE LOGOUT / BLACK CLOSE
  ========================================================= -->
@@ -12336,7 +11834,6 @@ window.__setLunduAIbusy=function(v){
 #botWindow .bot-input input:disabled,
 #botWindow .bot-input button:disabled{opacity:.55!important;cursor:not-allowed!important}
 </style>
-
 <script id="LUNDUYAN-FINAL-V10-UI-JS">
 (function(){
   'use strict';
@@ -12446,24 +11943,6 @@ window.__setLunduAIbusy=function(v){
 
   // Clean after profile open and after any legacy renderer has run.
   [1200,2000,3500,5000].forEach(ms=>setTimeout(boot,ms));
-})();
-</script>
-
-
-<script id="LUNDUYAN-V11-NAV-FINAL">
-(function(){
-  if(window.__LUNDUYAN_V11_NAV_FINAL__) return; window.__LUNDUYAN_V11_NAV_FINAL__=true;
-  const $=id=>document.getElementById(id);
-  function closeForNav(){
-    ['chatModal','myProfileModal','profileModal','productModal','buyModal','reviewModal','aggregationRequestModal','aggregationContributionModal','blockedAccountsModal','moderationFeedbackModal','moderatorInboxModal','notificationPanel','botWindow'].forEach(id=>$(id)?.classList.add('hidden'));
-    if(typeof window.setModalScrollLock==='function') window.setModalScrollLock(false);
-  }
-  document.addEventListener('click',function(e){
-    const el=e.target?.closest?.('[data-section], .nav-item, .mobile-nav-item, .mobile-bottom-nav button, header nav button');
-    if(!el) return;
-    if(el.closest('#chatModal,#myProfileModal,#profileModal,#botWindow')) return;
-    closeForNav();
-  },true);
 })();
 </script>
 
@@ -12674,341 +12153,49 @@ window.__setLunduAIbusy=function(v){
   }
 }
 </style>
-
-
 <style id="LUNDUYAN-BLACK-X-FINAL">
 .modal .close,.profile-modal-header .close,.chat-header .close,.bot-window .close,#myProfileModal .close,#moderationFeedbackModal .close,#moderatorInboxModal .close{background:#111!important;color:#fff!important;border:2px solid #111!important;box-shadow:0 4px 12px rgba(0,0,0,.22)!important;opacity:1!important;}
 </style>
-
-<!-- LUNDUYAN FINAL STABLE MOBILE + FULL LANGUAGE PATCH -->
-<style id="LUNDUYAN-FINAL-STABLE-MOBILE">
-@media(max-width:700px){
-  html,body{overflow-x:hidden!important;max-width:100%!important;}
-  body.modal-is-open #mobileBottomNav,
-  body:has(.modal:not(.hidden)) #mobileBottomNav{
-    display:none!important;pointer-events:none!important;visibility:hidden!important;
-  }
-  #mobileBottomNav{
-    position:fixed!important;left:0!important;right:0!important;bottom:0!important;
-    z-index:2147483000!important;pointer-events:auto!important;touch-action:manipulation!important;
-    min-height:72px!important;
-  }
-  #mobileBottomNav .mobile-nav-item{
-    pointer-events:auto!important;touch-action:manipulation!important;user-select:none!important;
-  }
-  #myProfileModal #myProfileContent{
-    overflow-y:auto!important;overflow-x:hidden!important;
-    -webkit-overflow-scrolling:touch!important;
-    padding-bottom:180px!important;
-  }
-  #myProfileModal .lunduyan-profile-actions{
-    display:flex!important;flex-direction:column!important;gap:12px!important;
-    width:100%!important;padding:18px 0 30px!important;
-  }
-  #myProfileModal .lunduyan-profile-actions button{
-    width:100%!important;min-height:56px!important;flex:0 0 auto!important;
-    position:relative!important;z-index:5!important;pointer-events:auto!important;
-  }
-  #aggregationSection{padding-bottom:150px!important;scroll-margin-top:75px!important;}
-  #aggregationSection .aggregation-actions,
-  #aggregationSection .poll-option,
-  #aggregationSection button{pointer-events:auto!important;touch-action:manipulation!important;}
-}
-.lunduyan-language-global{
-  position:fixed!important;top:18px!important;right:18px!important;z-index:2147483600!important;
-  display:flex!important;align-items:center!important;gap:0!important;background:#fff!important;
-  border:2px solid #d7e5dc!important;border-radius:999px!important;padding:4px!important;
-  box-shadow:0 8px 24px rgba(0,0,0,.12)!important;
-}
-.lunduyan-language-global button{border:0!important;background:transparent!important;color:#17683a!important;
-  font-weight:900!important;font-size:15px!important;padding:11px 17px!important;border-radius:999px!important;
-  cursor:pointer!important;touch-action:manipulation!important;}
-.lunduyan-language-global button.active{background:#199a48!important;color:#fff!important;}
-@media(max-width:700px){.lunduyan-language-global{top:calc(10px + env(safe-area-inset-top))!important;right:10px!important;}}
-/* green profile shell */
-#myProfileModal{background:rgba(5,67,28,.68)!important;}
-#myProfileModal>.modal-card{background:#199a48!important;}
-#myProfileModal .modal-header{background:#199a48!important;color:#fff!important;}
-#myProfileModal #myProfileContent{background:#eaf8ef!important;}
-</style>
-<script id="LUNDUYAN-FINAL-STABLE-MOBILE-JS">
+<script id="LUNDUYAN_SINGLE_NAV_FREEZE_FIX_JS">
 (function(){
-'use strict';
-if(window.__LUNDUYAN_STABLE_MOBILE_FINAL)return;
-window.__LUNDUYAN_STABLE_MOBILE_FINAL=true;
-const $=id=>document.getElementById(id);
-const isFarmer=()=>String(window.currentProfile?.role||'').toUpperCase()==='FARMER';
-const closePanels=()=>{
- ['chatModal','myProfileModal','profileModal','productModal','buyModal','reviewModal','aggregationRequestModal','aggregationContributionModal','blockedAccountsModal','moderationFeedbackModal','moderatorInboxModal','notificationPanel','botWindow'].forEach(id=>$(id)?.classList.add('hidden'));
- try{window.setModalScrollLock?.(false)}catch(_){ }
-};
-function installNav(){
- const old=$('mobileBottomNav'); if(!old||old.dataset.stableFinal==='1')return;
- const nav=old.cloneNode(true); nav.dataset.stableFinal='1'; old.replaceWith(nav);
- nav.querySelectorAll('[data-mobile-nav]').forEach(b=>b.type='button');
- nav.addEventListener('click',async e=>{
-   const b=e.target.closest('[data-mobile-nav]'); if(!b)return;
-   e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-   const action=b.dataset.mobileNav;
-   nav.querySelectorAll('.mobile-nav-item').forEach(x=>x.classList.remove('active')); b.classList.add('active');
-   try{
-     if(action==='home'){closePanels(); window.scrollTo({top:0,left:0,behavior:'auto'});return;}
-     if(action==='market'){
-       closePanels();
-       $('products')?.scrollIntoView({behavior:'auto',block:'start'});
-       if(typeof window.loadProducts==='function')Promise.resolve().then(()=>window.loadProducts()).catch(()=>{});
-       return;
-     }
-     if(action==='chat'){
-       closePanels();
-       if(typeof window.openChat==='function')await window.openChat(); else $('chatModal')?.classList.remove('hidden');
-       return;
-     }
-     if(action==='notifications'){
-       closePanels();
-       if(typeof window.toggleNotifications==='function')window.toggleNotifications(); else $('notificationPanel')?.classList.remove('hidden');
-       return;
-     }
-     if(action==='profile'){
-       closePanels();
-       if(typeof window.openMyProfile==='function')await window.openMyProfile(); else $('myProfileModal')?.classList.remove('hidden');
-       return;
-     }
-   }catch(err){console.error('LUNDUYAN mobile navigation:',err);}
- },true);
-}
-function ensureNav(){
- const nav=$('mobileBottomNav'); if(!nav)return;
- const market=nav.querySelector('[data-mobile-nav="market"]');
- if(market){const l=market.querySelector('.mobile-nav-label,small');const i=market.querySelector('.mobile-nav-icon,span');if(l)l.textContent=isFarmer()?'My Products':'Marketplace';if(i)i.textContent=isFarmer()?'🌾':'🛒';}
- nav.style.setProperty('display','grid','important');nav.style.setProperty('visibility','visible','important');nav.style.setProperty('pointer-events','auto','important');
- installNav();
-}
-const observer=new MutationObserver(()=>{const nav=$('mobileBottomNav');if(nav)ensureNav();});
-observer.observe(document.body,{childList:true,subtree:true});
-setTimeout(ensureNav,200);setTimeout(ensureNav,700);setTimeout(ensureNav,1400);
-
-// One clean Profile action block. No interval and no body-wide observer.
-function profileIsMaker(){const p=window.currentProfile,u=window.currentUser;return !!(p?.is_maker===true||String(u?.user_metadata?.is_maker||'').toLowerCase()==='true');}
-function canModerate(){return profileIsMaker()||['MODERATOR','ADMIN','DEVELOPER'].includes(String(window.currentProfile?.role||'').toUpperCase());}
-function ensureProfileActions(){
- const box=$('myProfileContent'); if(!box)return;
- box.querySelectorAll('.lunduyan-profile-actions').forEach((x,i)=>{if(i>0)x.remove();});
- let actions=box.querySelector('.lunduyan-profile-actions');
- if(!actions){actions=document.createElement('div');actions.className='lunduyan-profile-actions';box.appendChild(actions);}
- actions.innerHTML='';
- const tl=localStorage.getItem('lunduyan-language')==='tl';
- const add=(cls,text,fn)=>{const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=text;b.onclick=fn;actions.appendChild(b);};
- add('lunduyan-feedback-btn',tl?'💡 Feedback / Mungkahi':'💡 Feedback / Suggestion',()=>window.openModerationFeedback?.('FEEDBACK'));
- add('lunduyan-profile-manage-btn',tl?'🛡️ Pamahalaan ang mga Naka-block na Account':'🛡️ Manage Blocked Accounts',()=>window.openBlockedAccounts?.());
- if(canModerate())add('lunduyan-moderator-btn',tl?'🛡️ Buksan ang Moderator Inbox':'🛡️ Open Moderator Inbox',()=>window.openModeratorInbox?.());
- add('lunduyan-logout-btn',tl?'↪ Mag-logout':'↪ Logout',async()=>{
-   if(window.__lunduyanLoggingOut)return;
-   if(!confirm(tl?'Sigurado ka bang gusto mong mag-logout?':'Are you sure you want to log out?'))return;
-   window.__lunduyanLoggingOut=true;
-   try{if(typeof window.logout==='function')await window.logout();else await window.supabaseClient?.auth?.signOut();}
-   catch(e){window.__lunduyanLoggingOut=false;alert(e?.message||(tl?'Hindi makapag-logout.':'Unable to log out.'));}
- });
-}
-const originalOpen=window.openMyProfile;
-if(typeof originalOpen==='function'&&!originalOpen.__stableFinal){
- const wrapped=async function(){const r=await originalOpen.apply(this,arguments);setTimeout(ensureProfileActions,0);setTimeout(ensureProfileActions,120);return r;};
- wrapped.__stableFinal=true;window.openMyProfile=wrapped;
-}
-window.__lunduyanEnsureProfileActions=ensureProfileActions;
-const profileObserver=new MutationObserver(()=>{if(!$('myProfileModal')?.classList.contains('hidden')){clearTimeout(window.__profileActionDebounce);window.__profileActionDebounce=setTimeout(ensureProfileActions,80);}});
-profileObserver.observe(document.body,{childList:true,subtree:true});
+  'use strict';
+  if(window.__LUNDUYAN_SINGLE_NAV_FREEZE_FIX__) return;
+  window.__LUNDUYAN_SINGLE_NAV_FREEZE_FIX__=true;
+  const $=id=>document.getElementById(id);
+  function loggedIn(){const app=$('app');return !!(app&&!app.classList.contains('hidden')&&(window.currentProfile||window.currentUser));}
+  function sync(){
+    const nav=$('mobileBottomNav');
+    if(!nav)return;
+    if(innerWidth<=700&&loggedIn()){nav.style.setProperty('display','grid','important');nav.style.setProperty('visibility','visible','important');nav.style.setProperty('opacity','1','important');}
+    else nav.style.setProperty('display','none','important');
+  }
+  function closePanels(){
+    ['notificationPanel','botWindow','chatModal','profileModal','myProfileModal','productModal','buyModal','reviewModal','aggregationRequestModal','aggregationContributionModal','blockedAccountsModal','moderationFeedbackModal','moderatorInboxModal'].forEach(id=>$(id)?.classList.add('hidden'));
+    try{if(typeof window.setModalScrollLock==='function')window.setModalScrollLock(false);}catch(_){}
+  }
+  function bind(){
+    const nav=$('mobileBottomNav');
+    if(!nav||nav.dataset.singleFreezeBound==='1')return;
+    nav.dataset.singleFreezeBound='1';
+    nav.addEventListener('click',function(e){
+      const b=e.target.closest('[data-mobile-nav]');
+      if(!b)return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const action=b.dataset.mobileNav;
+      nav.querySelectorAll('[data-mobile-nav]').forEach(x=>x.classList.toggle('active',x===b));
+      closePanels();
+      if(action==='home'){window.scrollTo(0,0);return;}
+      if(action==='market'){const t=$('products');if(t)t.scrollIntoView({behavior:'auto',block:'start'});return;}
+      if(action==='chat'){if(typeof window.openChat==='function'){try{window.openChat();}catch(_){} } return;}
+      if(action==='notifications'){if(typeof window.toggleNotifications==='function'){try{window.toggleNotifications();}catch(_){} } return;}
+      if(action==='profile'){if(typeof window.openMyProfile==='function'){try{window.openMyProfile();}catch(_){} } return;}
+    },true);
+  }
+  function boot(){sync();bind();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,120),{once:true});else setTimeout(boot,120);
+  new MutationObserver(()=>{bind();sync();}).observe(document.body,{childList:true});
+  window.addEventListener('resize',sync,{passive:true});
 })();
-</script>
-
-<!-- ONE LANGUAGE SWITCHER + broad UI translation -->
-<script id="LUNDUYAN-FINAL-LANGUAGE">
-(function(){
-'use strict';
-if(window.__LUNDUYAN_FINAL_LANGUAGE)return;window.__LUNDUYAN_FINAL_LANGUAGE=true;
-const TL={
-
-    'Full Name':'Buong Pangalan','Location':'Lokasyon','Contact Number':'Numero ng Contact','Bio / About':'Bio / Tungkol sa Akin',
-    'City / Province':'Lungsod / Probinsya','Save Profile Changes':'I-save ang mga Pagbabago sa Profile','Name is required.':'Kailangan ang pangalan.',
-    'Profile updated successfully.':'Matagumpay na na-update ang profile.','Are you sure you want to log out?':'Sigurado ka bang gusto mong mag-logout?',
-    'Unable to log out.':'Hindi makapag-logout.','Feedback / Suggestion':'Feedback / Mungkahi','Manage Blocked Accounts':'Pamahalaan ang mga Naka-block na Account',
-    'Open Moderator Inbox':'Buksan ang Moderator Inbox','Logout':'Mag-logout','Loading blocked accounts...':'Naglo-load ng mga naka-block na account...',
-    'Manage accounts you have blocked.':'Pamahalaan ang mga account na iyong na-block.','No blocked accounts':'Walang naka-block na account',
-    'Accounts you block will appear here.':'Lalabas dito ang mga account na iyong bina-block.','Unblock':'I-unblock','Farmer Profile':'Profile ng Farmer',
-    'Buyer Profile':'Profile ng Buyer','Full Name':'Buong Pangalan','Description':'Paglalarawan','Price':'Presyo','Quantity':'Dami','Unit':'Yunit',
-    'Available quantity':'Available na dami','Price per unit':'Presyo bawat yunit','Municipality / Province':'Munisipalidad / Probinsya',
-    'Publish Product':'I-publish ang Produkto','Product Name':'Pangalan ng Produkto','Product Image':'Larawan ng Produkto',
-    'Add Product':'Magdagdag ng Produkto','Edit Profile':'I-edit ang Profile','Save':'I-save','Save Changes':'I-save ang mga Pagbabago',
-    'Cancel':'Kanselahin','Close':'Isara','Send':'Ipadala','Submit':'Isumite','Delete':'Tanggalin','Edit':'I-edit','Search':'Maghanap',
-    'Search products':'Maghanap ng mga produkto','Refresh':'I-refresh','Clear':'I-clear','Loading...':'Naglo-load...',
-    'No products found.':'Walang nahanap na produkto.','No messages yet.':'Wala pang mga mensahe.','Notifications':'Mga Abiso','Alerts':'Mga Abiso',
-    'Messages':'Mga Mensahe','Chat':'Chat','Home':'Home','Profile':'Profile','Marketplace':'Pamilihan','My Products':'Aking mga Produkto',
-    'My Orders':'Aking mga Order','Orders':'Mga Order','Transactions':'Mga Transaksyon','Products':'Mga Produkto','Settings':'Mga Setting',
-    'Community Aggregations':'Community Aggregation','Community Pool':'Community Pool','Create Community Pool':'Gumawa ng Community Pool',
-    'Contribute to Aggregation':'Mag-ambag sa Aggregation','Join Aggregation':'Sumali sa Aggregation','Target Quantity':'Target na Dami',
-    'Proposed Price':'Iminungkahing Presyo','Offer Price':'Inaalok na Presyo','Additional Details':'Karagdagang Detalye',
-    'How it works:':'Paano ito gumagana:','Price Voting':'Pagboto sa Presyo','Farmer Price Voting':'Pagboto ng Presyo ng mga Farmer',
-    'Vote':'Bumoto','Purchase':'Bumili','Buy Now':'Bumili Ngayon','Place Order':'Ilagay ang Order','Buyer Note':'Tala ng Buyer',
-    'Rate your purchase':'I-rate ang iyong binili','Reviews':'Mga Review','Rating':'Rating','Status':'Status','Available':'Available',
-    'Pending':'Naghihintay','Completed':'Nakumpleto','Closed':'Sarado','Open':'Bukas','Back':'Bumalik','Next':'Susunod',
-    'Help & Safety':'Tulong at Kaligtasan','General Feedback':'Pangkalahatang Feedback','Report an Account':'I-report ang Account',
-    'Account to report':'Account na ire-report','Reason':'Dahilan','Details':'Detalye','Subject':'Paksa','Message':'Mensahe',
-    'Send to Moderators':'Ipadala sa mga Moderator','Submit Report':'Isumite ang Report','Sending...':'Ipinapadala...',
-    'Moderator Inbox':'Inbox ng Moderator','User feedback and safety reports':'Feedback ng user at safety reports',
-    'Loading moderation messages...':'Naglo-load ng moderation messages...','No moderation messages yet.':'Wala pang moderation messages.',
-    'Mark in review':'Markahan bilang nire-review','Resolve':'Lutasin','Report':'I-report','Feedback':'Feedback','Suggestion':'Mungkahi',
-    'Welcome to LUNDUYAN':'Maligayang pagdating sa LUNDUYAN','Choose your role':'Piliin ang iyong role','Farmer':'Farmer','Buyer':'Buyer',
-    'Get Started':'Magsimula','Login':'Mag-login','Sign in':'Mag-login','Sign Up':'Mag-sign up','Register':'Magparehistro',
-    'Email or Phone Number':'Email o Numero ng Telepono','Phone Number':'Numero ng Telepono','Password':'Password','Email':'Email',
-    'Tell people about yourself...':'Sabihin sa mga tao ang tungkol sa iyo...','Fresh Tomatoes':'Sariwang Kamatis','Fresh Greens':'Sariwang Gulay',
-    'Sweet Corn':'Matamis na Mais','Local harvest':'Lokal na ani','Direct from a local farmer':'Direkta mula sa lokal na farmer',
-    'Available now':'Available ngayon','Need help?':'Kailangan ng tulong?','Ask LUNDUYAN AI':'Magtanong sa LUNDUYAN AI',
-    'Your LUNDUYAN helper':'Iyong LUNDUYAN helper','How do I buy?':'Paano ako bibili?','How do I sell?':'Paano ako magbebenta?',
-    'How do I sell a product?':'Paano ako magbebenta ng produkto?','How do I manage orders?':'Paano ko pamamahalaan ang mga order?',
-    'How do I edit my profile?':'Paano ko ie-edit ang profile ko?','How do I block a buyer?':'Paano ko iba-block ang isang buyer?',
-    'How do I buy a product?':'Paano ako bibili ng produkto?','How do I message a farmer?':'Paano ako magme-message sa farmer?',
-    'How do I track my order?':'Paano ko susubaybayan ang order ko?','How do I block a farmer?':'Paano ko iba-block ang isang farmer?',
-    'Profile':'Profile','My Profile':'Aking Profile','Edit profile':'I-edit ang profile','Account':'Account','Account Settings':'Mga Setting ng Account',
-    'Dashboard':'Dashboard','Home':'Home','Products':'Mga Produkto','Product':'Produkto','Product Details':'Detalye ng Produkto','Product name':'Pangalan ng produkto',
-    'Price':'Presyo','Price per unit':'Presyo bawat yunit','Quantity':'Dami','Unit':'Yunit','Stock':'Stock','Location':'Lokasyon','Description':'Paglalarawan',
-    'Category':'Kategorya','Farmer':'Farmer','Buyer':'Buyer','Seller':'Nagbebenta','Customer':'Mamimili','Marketplace':'Pamilihan',
-    'Search':'Maghanap','Search products':'Maghanap ng mga produkto','Search farmers':'Maghanap ng mga farmer','Filter':'Salain','Sort':'Ayusin','Apply':'Ilapat','Reset':'I-reset',
-    'View Details':'Tingnan ang Detalye','View Product':'Tingnan ang Produkto','View Profile':'Tingnan ang Profile','See More':'Tingnan Pa','See Less':'Bawasan',
-    'Add to Cart':'Idagdag sa Cart','Buy Now':'Bumili Ngayon','Checkout':'Checkout','Order':'Order','Orders':'Mga Order','My Orders':'Aking mga Order',
-    'Order Details':'Detalye ng Order','Order Status':'Status ng Order','Order History':'Kasaysayan ng Order','Transaction':'Transaksyon','Transactions':'Mga Transaksyon',
-    'Pending':'Naghihintay','Processing':'Pinoproseso','Confirmed':'Nakumpirma','Accepted':'Tinanggap','Rejected':'Tinanggihan','Completed':'Nakumpleto','Cancelled':'Kinansela','Canceled':'Kinansela',
-    'Available':'Available','Unavailable':'Hindi Available','Out of stock':'Ubos na ang stock','In stock':'May stock','Low stock':'Kaunti na ang stock',
-    'Messages':'Mga Mensahe','Message':'Mensahe','Send Message':'Magpadala ng Mensahe','Send':'Ipadala','Reply':'Sumagot','Conversation':'Pag-uusap','Conversations':'Mga Pag-uusap',
-    'Notifications':'Mga Abiso','Alerts':'Mga Abiso','Notification':'Abiso','Mark all as read':'Markahan lahat bilang nabasa','No notifications yet.':'Wala pang mga abiso.',
-    'Profile updated successfully.':'Matagumpay na na-update ang profile.','Product published successfully.':'Matagumpay na na-publish ang produkto.','Changes saved successfully.':'Matagumpay na na-save ang mga pagbabago.',
-    'Failed to save changes.':'Hindi na-save ang mga pagbabago.','Something went wrong.':'May nangyaring problema.','Please try again.':'Pakisubukang muli.','Loading':'Naglo-load','Loading...':'Naglo-load...',
-    'Create':'Gumawa','Create Product':'Gumawa ng Produkto','Create Community Pool':'Gumawa ng Community Pool','Create Farmer Pool':'Gumawa ng Farmer Pool',
-    'Community Aggregations':'Community Aggregation','Community Aggregation':'Community Aggregation','Community Pool':'Community Pool','Farmer Pool':'Farmer Pool',
-    'Contributions':'Mga Ambag','Contribution':'Ambag','Contribute':'Mag-ambag','Join':'Sumali','Joined':'Sumali na','Target':'Target','Target Quantity':'Target na Dami',
-    'Proposed Price':'Iminungkahing Presyo','Offer Price':'Inaalok na Presyo','Final Price':'Panghuling Presyo','Selling Price':'Presyo ng Pagbebenta','Price Voting':'Pagboto sa Presyo',
-    'Farmer Price Voting':'Pagboto ng Presyo ng mga Farmer','Vote':'Bumoto','Vote Now':'Bumoto Ngayon','Votes':'Mga Boto','Voting':'Pagboto','Voting closed':'Sarado na ang pagboto',
-    'Winner':'Nanalo','Winning Price':'Napiling Presyo','Price choices are being prepared.':'Inihahanda ang mga pagpipilian sa presyo.','Price voting in progress':'Kasalukuyang bumoboto sa presyo',
-    'Feedback / Suggestion':'Feedback / Mungkahi','Feedback':'Feedback','Suggestion':'Mungkahi','Report':'I-report','Report an Account':'I-report ang Account','Safety':'Kaligtasan',
-    'Blocked Accounts':'Mga Naka-block na Account','Manage Blocked Accounts':'Pamahalaan ang mga Naka-block na Account','Block':'I-block','Unblock':'I-unblock','Blocked':'Naka-block',
-    'Moderator Inbox':'Inbox ng Moderator','Open Moderator Inbox':'Buksan ang Moderator Inbox','Manage Blocked Accounts':'Pamahalaan ang mga Naka-block na Account',
-    'Save':'I-save','Save Changes':'I-save ang mga Pagbabago','Save Profile Changes':'I-save ang mga Pagbabago sa Profile','Cancel':'Kanselahin','Close':'Isara','Back':'Bumalik','Next':'Susunod','Done':'Tapos na',
-    'Delete':'Tanggalin','Edit':'I-edit','Update':'I-update','Confirm':'Kumpirmahin','Continue':'Magpatuloy','Skip':'Laktawan','Refresh':'I-refresh','Clear':'I-clear','Submit':'Isumite',
-    'Logout':'Mag-logout','Log out':'Mag-logout','Login':'Mag-login','Log in':'Mag-login','Sign in':'Mag-login','Sign Up':'Mag-sign up','Register':'Magparehistro','Get Started':'Magsimula',
-    'Welcome':'Maligayang pagdating','Welcome back':'Maligayang pagbabalik','Choose your role':'Piliin ang iyong role','Farmer Account':'Farmer Account','Buyer Account':'Buyer Account',
-    'Email':'Email','Email Address':'Email Address','Phone':'Telepono','Phone Number':'Numero ng Telepono','Contact Number':'Numero ng Contact','Password':'Password','Confirm Password':'Kumpirmahin ang Password',
-    'Full Name':'Buong Pangalan','First Name':'Pangalan','Last Name':'Apelyido','Bio':'Bio','Bio / About':'Bio / Tungkol sa Akin','Tell people about yourself...':'Sabihin sa mga tao ang tungkol sa iyo...',
-    'City / Province':'Lungsod / Probinsya','Municipality / Province':'Munisipalidad / Probinsya','Additional details':'Karagdagang detalye','Additional Details':'Karagdagang Detalye',
-    'How it works:':'Paano ito gumagana:','Learn more':'Matuto pa','Help':'Tulong','Help & Safety':'Tulong at Kaligtasan','Terms':'Mga Tuntunin','Privacy':'Privacy',
-    'Current prices':'Mga Kasalukuyang Presyo','Current agricultural prices':'Mga Kasalukuyang Presyo ng Agrikultura','Market prices':'Mga Presyo sa Pamilihan','Farmgate price':'Presyong farmgate','Retail price':'Presyong tingi','Wholesale price':'Presyong pakyawan',
-    'Your LUNDUYAN helper':'Iyong LUNDUYAN helper','Ask LUNDUYAN AI anything...':'Magtanong ng kahit ano sa LUNDUYAN AI...','Thinking...':'Nag-iisip...','Checking sources...':'Sinusuri ang mga source...','Connected to LUNDUYAN AI':'Nakakonekta sa LUNDUYAN AI',
-    'I could not generate an answer right now. Please try again.':'Hindi ako makabuo ng sagot ngayon. Pakisubukang muli.','Something went wrong while contacting LUNDUYAN AI.':'May problema habang kumokonekta sa LUNDUYAN AI.',
-    'No products found.':'Walang nahanap na produkto.','No messages yet.':'Wala pang mga mensahe.','No notifications yet.':'Wala pang mga abiso.','No moderation messages yet.':'Wala pang moderation messages.',
-    'Are you sure you want to log out?':'Sigurado ka bang gusto mong mag-logout?','Unable to log out.':'Hindi makapag-logout.','Name is required.':'Kailangan ang pangalan.'
-};
-const reverse={};Object.keys(TL).forEach(k=>{const v=String(TL[k]||'').trim();if(v&&v!==k&&!reverse[v])reverse[v]=k;});
-window.__LUNDUYAN_EXTRA_TL__=TL;window.__LUNDUYAN_TL_TO_EN__=reverse;
-const originals=new WeakMap();
-function lang(){return localStorage.getItem('lunduyan-language')==='tl'?'tl':'en'}
-function shouldSkip(el){return !el||el.closest('.lunduyan-language-global,.bot-messages,.bot-window .bot-input,script,style,textarea,input');}
-function translateNode(node,l){
- if(node.nodeType!==3)return;
- const p=node.parentElement;if(shouldSkip(p))return;
- const raw=originals.get(node)??node.nodeValue;originals.set(node,raw);
- const key=raw.trim();if(!key)return;
- const target=l==='tl'?(TL[key]||key):(reverse[key]||key);
- if(target!==key)node.nodeValue=raw.replace(key,target);
- else if(l==='en'&&reverse[key])node.nodeValue=raw.replace(key,reverse[key]);
-}
-function translateTree(root=document.body){
- const l=lang();
- const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
- const arr=[];let n;while((n=walker.nextNode()))arr.push(n);arr.forEach(x=>translateNode(x,l));
- root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(el=>{
-   if(shouldSkip(el))return;
-   ['placeholder','title','aria-label'].forEach(a=>{if(!el.hasAttribute(a))return;const raw=el.dataset.lunduyanOriginalAttr?.split('||').find(x=>x.startsWith(a+'='))?.slice(a.length+1)??el.getAttribute(a);if(!el.dataset.lunduyanOriginalAttrs)el.dataset.lunduyanOriginalAttrs='';let store={};try{store=JSON.parse(el.dataset.lunduyanOriginalAttrs)}catch(_){};if(store[a]===undefined){store[a]=raw;el.dataset.lunduyanOriginalAttrs=JSON.stringify(store)}const val=l==='tl'?(TL[store[a]]||store[a]):(reverse[store[a]]||store[a]);el.setAttribute(a,val);});
- });
- const sw=document.querySelector('.lunduyan-language-global');if(sw)sw.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));
- window.__lunduyanEnsureProfileActions?.();
-}
-function mount(){
- let sw=document.querySelector('.lunduyan-language-global');if(sw)return;
- sw=document.createElement('div');sw.className='lunduyan-language-global';sw.setAttribute('role','group');sw.setAttribute('aria-label','Language');
- sw.innerHTML='<button type="button" data-lang="tl" aria-label="Tagalog">Tagalog</button><button type="button" data-lang="en" aria-label="English">English</button>';
- document.body.appendChild(sw);
- sw.addEventListener('click',e=>{const b=e.target.closest('button[data-lang]');if(!b)return;localStorage.setItem('lunduyan-language',b.dataset.lang);translateTree(document.body);});
- translateTree(document.body);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
-let timer=0;
-const obs=new MutationObserver(records=>{clearTimeout(timer);timer=setTimeout(()=>{const l=lang();records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)translateTree(n)}));const sw=document.querySelector('.lunduyan-language-global');if(sw)sw.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));},120);});
-obs.observe(document.body,{childList:true,subtree:true});
-})();
-</script>
-
-<!-- FINAL AI FRONTEND STABILITY + LANGUAGE + PRICE FALLBACK -->
-<script id="LUNDUYAN-FINAL-AI-FRONTEND">
-(function(){
-'use strict';
-if(window.__LUNDUYAN_FINAL_AI_FRONTEND)return;window.__LUNDUYAN_FINAL_AI_FRONTEND=true;
-function currentLang(){return localStorage.getItem('lunduyan-language')==='tl'?'tl':'en'}
-function isPriceQuestion(t){return /(\bpresyo\b|\bprice\b|magkano|how much|cost|worth|per\s*(kg|kilo)|farmgate|wholesale|retail)/i.test(String(t||''));}
-async function localPriceFallback(text){
- const sb=window.supabaseClient;if(!sb)return null;
- const q=String(text||'').toLowerCase().replace(/[^a-z0-9áéíóúñü\s-]/gi,' ').split(/\s+/).filter(x=>x.length>=3&&!['magkano','ang','presyo','price','ngayon','today','current','per','kilo','kg','farmgate','how','much','the','is','of','ng'].includes(x)).slice(0,6);
- try{
-  const {data}=await sb.from('products').select('name,price,unit,location,created_at,status').eq('status','ACTIVE').order('created_at',{ascending:false}).limit(80);
-  const rows=(data||[]).filter(r=>!q.length||q.some(w=>String(r.name||'').toLowerCase().includes(w))).slice(0,8);
-  if(rows.length){const first=rows[0];const lines=rows.map(r=>`• ₱${Number(r.price||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})} / ${r.unit||'unit'} — ${r.name}${r.location?' ('+r.location+')':''}`);return currentLang()==='tl'?`Narito ang kasalukuyang presyo sa LUNDUYAN para sa katugmang produkto:\n${lines.join('\n')}\n\nIto ay presyo ng listing sa LUNDUYAN, hindi awtomatikong farmgate o retail market price.`:`Here are the current matching LUNDUYAN listing prices:
-${lines.join('\n')}
-
-These are LUNDUYAN listing prices, not automatically farmgate or retail market prices.`;}
- }catch(_){ }
- return null;
-}
-const old=window.askLUNDUYANAI;
-if(typeof old!=='function')return;
-window.askLUNDUYANAI=async function(text){
- const t=String(text||'').trim();if(!t)return;
- if(window.__lunduAIbusy)return;
- // Rebind the original function's body through a temporary invoke wrapper by letting it run normally;
- // the important fixes are language payload and a safe fallback when the edge function is unavailable.
- const originalInvoke=window.supabaseClient?.functions?.invoke;
- if(originalInvoke && !window.__lunduyanInvokeWrapped){
-   window.__lunduyanInvokeWrapped=true;
-   window.supabaseClient.functions.invoke=async function(name,opts){
-     if(name==='lunduyan-ai'){
-       const body={...(opts?.body||{}),language:currentLang()};
-       try{
-         const result=await originalInvoke.call(this,name,{...(opts||{}),body});
-         if(!result?.error) return result;
-         if(isPriceQuestion(body.message)){
-           const fb=await localPriceFallback(body.message);
-           if(fb)return {data:{answer:fb},error:null};
-         }
-         return result;
-       }catch(err){
-         if(isPriceQuestion(body.message)){
-           const fb=await localPriceFallback(body.message);
-           if(fb)return {data:{answer:fb},error:null};
-         }
-         throw err;
-       }
-     }
-     return originalInvoke.call(this,name,opts);
-   };
- }
- try{return await old(t)}catch(err){
-   if(isPriceQuestion(t)){
-     const fallback=await localPriceFallback(t);if(fallback){
-       const b=document.getElementById('botMessages');if(b){b.insertAdjacentHTML('beforeend',`<div class="bot-msg bot">${String(fallback).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`);b.scrollTop=b.scrollHeight;}
-       return;
-     }
-   }
-   throw err;
- }
-};
-})();
-</script>
-
-</body>
+</script></body>
 </html>
