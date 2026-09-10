@@ -12916,40 +12916,80 @@ const TL={
 };
 const reverse={};Object.keys(TL).forEach(k=>{const v=String(TL[k]||'').trim();if(v&&v!==k&&!reverse[v])reverse[v]=k;});
 window.__LUNDUYAN_EXTRA_TL__=TL;window.__LUNDUYAN_TL_TO_EN__=reverse;
+
+// FAST LANGUAGE ENGINE: never re-walk the entire document on every tap.
+// Text nodes are tracked once and updated in small batches so mobile browsers stay responsive.
+const tracked=new Set();
 const originals=new WeakMap();
+let current='en';
+let switchToken=0;
+let raf=0;
 function lang(){return localStorage.getItem('lunduyan-language')==='tl'?'tl':'en'}
 function shouldSkip(el){return !el||el.closest('.lunduyan-language-global,.bot-messages,.bot-window .bot-input,script,style,textarea,input');}
-function translateNode(node,l){
- if(node.nodeType!==3)return;
- const p=node.parentElement;if(shouldSkip(p))return;
- const raw=originals.get(node)??node.nodeValue;originals.set(node,raw);
- const key=raw.trim();if(!key)return;
- const target=l==='tl'?(TL[key]||key):(reverse[key]||key);
- if(target!==key)node.nodeValue=raw.replace(key,target);
- else if(l==='en'&&reverse[key])node.nodeValue=raw.replace(key,reverse[key]);
+function trackText(n){
+  if(!n||n.nodeType!==3||tracked.has(n))return;
+  const p=n.parentElement;if(shouldSkip(p))return;
+  const raw=n.nodeValue||''; const key=raw.trim(); if(!key)return;
+  originals.set(n,raw); tracked.add(n);
 }
-function translateTree(root=document.body){
- const l=lang();
- const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
- const arr=[];let n;while((n=walker.nextNode()))arr.push(n);arr.forEach(x=>translateNode(x,l));
- root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(el=>{
-   if(shouldSkip(el))return;
-   ['placeholder','title','aria-label'].forEach(a=>{if(!el.hasAttribute(a))return;const raw=el.dataset.lunduyanOriginalAttr?.split('||').find(x=>x.startsWith(a+'='))?.slice(a.length+1)??el.getAttribute(a);if(!el.dataset.lunduyanOriginalAttrs)el.dataset.lunduyanOriginalAttrs='';let store={};try{store=JSON.parse(el.dataset.lunduyanOriginalAttrs)}catch(_){};if(store[a]===undefined){store[a]=raw;el.dataset.lunduyanOriginalAttrs=JSON.stringify(store)}const val=l==='tl'?(TL[store[a]]||store[a]):(reverse[store[a]]||store[a]);el.setAttribute(a,val);});
- });
- const sw=document.querySelector('.lunduyan-language-global');if(sw)sw.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));
- window.__lunduyanEnsureProfileActions?.();
+function trackTree(root){
+  if(!root)return;
+  if(root.nodeType===3){trackText(root);return;}
+  if(root.nodeType!==1||shouldSkip(root))return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+  while((n=w.nextNode()))trackText(n);
+  root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(el=>{
+    if(shouldSkip(el))return;
+    if(!el.dataset.lunduyanOriginalAttrs){
+      const store={};['placeholder','title','aria-label'].forEach(a=>{if(el.hasAttribute(a))store[a]=el.getAttribute(a);});
+      el.dataset.lunduyanOriginalAttrs=JSON.stringify(store);
+    }
+  });
+}
+function translateAttrs(el,l){
+  if(!el||el.nodeType!==1||shouldSkip(el))return;
+  let store={};try{store=JSON.parse(el.dataset.lunduyanOriginalAttrs||'{}')}catch(_){}
+  ['placeholder','title','aria-label'].forEach(a=>{if(store[a]===undefined)return;const v=l==='tl'?(TL[store[a]]||store[a]):(reverse[store[a]]||store[a]);if(el.getAttribute(a)!==v)el.setAttribute(a,v);});
+}
+function setOne(n,l){
+  const raw=originals.get(n); if(raw===undefined)return;
+  const key=raw.trim(); if(!key)return;
+  const target=l==='tl'?(TL[key]||key):(reverse[key]||key);
+  const value=raw.replace(key,target);
+  if(n.nodeValue!==value)n.nodeValue=value;
+}
+function updateSwitch(l){const sw=document.querySelector('.lunduyan-language-global');if(sw)sw.querySelectorAll('button[data-lang]').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));}
+function applyLanguage(l){
+  current=l; updateSwitch(l);
+  const nodes=Array.from(tracked);
+  const token=++switchToken; let i=0;
+  if(raf)cancelAnimationFrame(raf);
+  function step(){
+    if(token!==switchToken)return;
+    const end=Math.min(i+350,nodes.length);
+    for(;i<end;i++){const n=nodes[i];if(!n.isConnected){tracked.delete(n);continue;}setOne(n,l);translateAttrs(n.parentElement,l);}
+    if(i<nodes.length)raf=requestAnimationFrame(step);
+  }
+  raf=requestAnimationFrame(step);
 }
 function mount(){
- let sw=document.querySelector('.lunduyan-language-global');if(sw)return;
- sw=document.createElement('div');sw.className='lunduyan-language-global';sw.setAttribute('role','group');sw.setAttribute('aria-label','Language');
- sw.innerHTML='<button type="button" data-lang="tl" aria-label="Tagalog">Tagalog</button><button type="button" data-lang="en" aria-label="English">English</button>';
- document.body.appendChild(sw);
- sw.addEventListener('click',e=>{const b=e.target.closest('button[data-lang]');if(!b)return;localStorage.setItem('lunduyan-language',b.dataset.lang);translateTree(document.body);});
- translateTree(document.body);
+  let sw=document.querySelector('.lunduyan-language-global');
+  if(!sw){
+    sw=document.createElement('div');sw.className='lunduyan-language-global';sw.setAttribute('role','group');sw.setAttribute('aria-label','Language');
+    sw.innerHTML='<button type="button" data-lang="tl" aria-label="Tagalog">Tagalog</button><button type="button" data-lang="en" aria-label="English">English</button>';
+    document.body.appendChild(sw);
+    sw.addEventListener('click',e=>{const b=e.target.closest('button[data-lang]');if(!b)return;e.preventDefault();e.stopPropagation();const next=b.dataset.lang==='tl'?'tl':'en';if(next===current){updateSwitch(next);return;}localStorage.setItem('lunduyan-language',next);applyLanguage(next);});
+  }
+  trackTree(document.body); current=lang(); updateSwitch(current); applyLanguage(current);
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 let timer=0;
-const obs=new MutationObserver(records=>{clearTimeout(timer);timer=setTimeout(()=>{const l=lang();records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)translateTree(n)}));const sw=document.querySelector('.lunduyan-language-global');if(sw)sw.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));},120);});
+const obs=new MutationObserver(records=>{
+  clearTimeout(timer);timer=setTimeout(()=>{
+    records.forEach(r=>r.addedNodes.forEach(n=>trackTree(n)));
+    updateSwitch(current);
+  },180);
+});
 obs.observe(document.body,{childList:true,subtree:true});
 })();
 </script>
