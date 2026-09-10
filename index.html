@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="fil">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1.0" name="viewport"/>
@@ -12809,7 +12809,7 @@ function installNav(){
 function ensureNav(){
  const nav=$('mobileBottomNav'); if(!nav)return;
  const market=nav.querySelector('[data-mobile-nav="market"]');
- if(market){const l=market.querySelector('.mobile-nav-label,small');const i=market.querySelector('.mobile-nav-icon,span');if(l)l.textContent=isFarmer()?'Aking mga Ani':'Pamilihan';if(i)i.textContent=isFarmer()?'🌾':'🛒';}
+ if(market){const l=market.querySelector('.mobile-nav-label,small');const i=market.querySelector('.mobile-nav-icon,span');if(l)l.textContent=isFarmer()?'My Products':'Marketplace';if(i)i.textContent=isFarmer()?'🌾':'🛒';}
  nav.style.setProperty('display','grid','important');nav.style.setProperty('visibility','visible','important');nav.style.setProperty('pointer-events','auto','important');
  installNav();
 }
@@ -12825,10 +12825,10 @@ function ensureProfileActions(){
  if(!actions){actions=document.createElement('div');actions.className='lunduyan-profile-actions';box.appendChild(actions);}
  actions.innerHTML='';
  const add=(cls,text,fn)=>{const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=text;b.onclick=fn;actions.appendChild(b);};
- add('lunduyan-feedback-btn','💡 Puna / Mungkahi',()=>window.openModerationFeedback?.('FEEDBACK'));
- add('lunduyan-profile-manage-btn','🛡️ Pamahalaan ang mga Naka-block na Account',()=>window.openBlockedAccounts?.());
- if(canModerate())add('lunduyan-moderator-btn','🛡️ Buksan ang Inbox ng Tagapangasiwa',()=>window.openModeratorInbox?.());
- add('lunduyan-logout-btn','↪ Lumabas sa Account',async()=>{
+ add('lunduyan-feedback-btn','💡 Feedback / Suggestion',()=>window.openModerationFeedback?.('FEEDBACK'));
+ add('lunduyan-profile-manage-btn','🛡️ Manage Blocked Accounts',()=>window.openBlockedAccounts?.());
+ if(canModerate())add('lunduyan-moderator-btn','🛡️ Open Moderator Inbox',()=>window.openModeratorInbox?.());
+ add('lunduyan-logout-btn','↪ Logout',async()=>{
    if(window.__lunduyanLoggingOut)return;
    if(!confirm('Sigurado ka bang gusto mong lumabas sa account?'))return;
    window.__lunduyanLoggingOut=true;
