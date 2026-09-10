@@ -6135,7 +6135,11 @@ LOGOUT
 ========================================================= */
 
 async function logout(){
-  // Close the visible app immediately. Do not make the user wait for network/signOut cleanup.
+  // Prevent overlapping logout requests, but ALWAYS unlock after completion
+  // so MIT App Inventor WebView can log out again without a page reload.
+  if(window.__lunduyanLoggingOut)return;
+  window.__lunduyanLoggingOut=true;
+
   const app=document.getElementById("app");
   const landing=document.getElementById("landingScreen");
   const auth=document.getElementById("authScreen");
@@ -6148,18 +6152,40 @@ async function logout(){
   landing?.classList.remove("hidden");
   window.scrollTo(0,0);
 
-  // Sign out in the background; the landing screen is already visible.
   const channels=[messageChannel,orderChannel,productChannel,notificationChannel,reviewChannel].filter(Boolean);
   messageChannel=orderChannel=productChannel=notificationChannel=reviewChannel=null;
   try{
     await Promise.allSettled(channels.map(ch=>supabaseClient.removeChannel(ch)));
-    await supabaseClient.auth.signOut();
+    const {error}=await supabaseClient.auth.signOut({scope:"local"});
+    if(error) console.warn("LUNDUYAN auth signOut:",error);
+    try{
+      const stores=[window.localStorage,window.sessionStorage];
+      stores.forEach(store=>{
+        const keys=[];
+        for(let i=0;i<store.length;i++){
+          const k=store.key(i);
+          if(k && /(^|[-_])sb[-_].*auth[-_]token/i.test(k)) keys.push(k);
+        }
+        keys.forEach(k=>store.removeItem(k));
+      });
+    }catch(storageErr){ console.warn("LUNDUYAN storage cleanup:",storageErr); }
   }catch(e){ console.warn("LUNDUYAN logout cleanup:",e); }
-  currentUser=null;
-  currentProfile=null;
-  currentConversation=null;
-  window.currentUser=null;
-  window.currentProfile=null;
+  finally{
+    currentUser=null;
+    currentProfile=null;
+    currentConversation=null;
+    window.currentUser=null;
+    window.currentProfile=null;
+    window.__lunduyanLoggingOut=false;
+    document.querySelectorAll(".modal").forEach(m=>m.classList.add("hidden"));
+    document.getElementById("notificationPanel")?.classList.add("hidden");
+    document.getElementById("botWindow")?.classList.add("hidden");
+    document.getElementById("mobileBottomNav")?.style.setProperty("display","none","important");
+    app?.classList.add("hidden");
+    auth?.classList.add("hidden");
+    landing?.classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
 }
 
 
@@ -6193,23 +6219,31 @@ async function checkSession(){
 }
 
 
-supabaseClient
-.auth
-.onAuthStateChange(
-  async(event,session)=>{
-
-    if(
-      event === "SIGNED_IN" &&
-      session
-    ){
-
-      await initializeApp(
-        session.user
-      );
+if(!window.__lunduyanMainAuthListenerBound){
+  window.__lunduyanMainAuthListenerBound=true;
+  supabaseClient.auth.onAuthStateChange(async(event,session)=>{
+    if(event === "SIGNED_IN" && session){
+      await initializeApp(session.user);
+      return;
     }
-
-  }
-);
+    if(event === "SIGNED_OUT"){
+      currentUser=null;
+      currentProfile=null;
+      currentConversation=null;
+      window.currentUser=null;
+      window.currentProfile=null;
+      document.querySelectorAll(".modal").forEach(m=>m.classList.add("hidden"));
+      document.getElementById("notificationPanel")?.classList.add("hidden");
+      document.getElementById("botWindow")?.classList.add("hidden");
+      document.getElementById("mobileBottomNav")?.style.setProperty("display","none","important");
+      document.getElementById("app")?.classList.add("hidden");
+      document.getElementById("authScreen")?.classList.add("hidden");
+      document.getElementById("landingScreen")?.classList.remove("hidden");
+      window.__lunduyanLoggingOut=false;
+      window.scrollTo(0,0);
+    }
+  });
+}
 
 
 /* =========================================================
@@ -12198,10 +12232,9 @@ window.__setLunduAIbusy=function(v){
       e.stopPropagation();
       if(window.__lunduyanLoggingOut)return;
       if(!confirm('Are you sure you want to log out?'))return;
-      window.__lunduyanLoggingOut=true;
       try{
         if(typeof window.logout==='function') await window.logout();
-        else if(window.supabaseClient?.auth) await window.supabaseClient.auth.signOut();
+        else if(window.supabaseClient?.auth) await window.supabaseClient.auth.signOut({scope:'local'});
       }catch(err){
         console.error('Logout:',err);
         alert(err?.message||'Unable to log out.');
