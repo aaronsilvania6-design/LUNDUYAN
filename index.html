@@ -2364,6 +2364,11 @@ body.modal-is-open{overscroll-behavior:none}
   #authScreen .auth-back-btn{width:auto!important;align-self:flex-start!important;}
 }
 </style>
+
+<style id="LUNDUYAN-AI-DIRECT-ANSWER-FINAL">
+#botWindow .bot-msg.bot{white-space:normal;word-break:break-word;}
+#botWindow .bot-suggestions button{pointer-events:auto!important;}
+</style>
 </head>
 <body>
 <!-- =======================================================
@@ -11093,7 +11098,7 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
     const typingId=typing();setStatus(/(price|presyo|today|latest|current|news|trend|weather|government|market)/i.test(text)?'Checking sources…':'Thinking…');
     try{
       if(!window.supabaseClient?.functions?.invoke)throw new Error('LUNDUYAN AI connection is not ready. Please make sure Supabase is configured.');
-      const {data,error}=await window.supabaseClient.functions.invoke('lunduyan-ai',{body:{message:text,history}});
+      const {data,error}=await window.supabaseClient.functions.invoke('lunduyan-ai',{body:{message:text,history,language:'en'}});
       if(error)throw error;
       const answer=data?.answer||'I could not generate an answer right now. Please try again.';
       removeTyping(typingId);addBot(answer,data?.annotations||[]);
@@ -12927,33 +12932,6 @@ window.__lunduyanEnsureProfileActions=ensureProfileActions;
 </script>
 
 
-
-<!-- FINAL AI FRONTEND STABILITY + LANGUAGE + PRICE FALLBACK -->
-<script id="LUNDUYAN-FINAL-AI-FRONTEND-CLEAN">
-(function(){
-'use strict';
-if(window.__LUNDUYAN_FINAL_AI_FRONTEND_CLEAN)return;window.__LUNDUYAN_FINAL_AI_FRONTEND_CLEAN=true;
-function isPriceQuestion(t){return /(presyo|magkano|magkano ang|kano|how much|price|cost|worth|per\s*(kg|kilo)|farmgate|wholesale|retail)/i.test(String(t||''));}
-async function localPriceFallback(text){
- const sb=window.supabaseClient;if(!sb)return null;
- const q=String(text||'').toLowerCase().replace(/[^a-z0-9áéíóúñü\s-]/gi,' ').split(/\s+/).filter(x=>x.length>=3&&!['magkano','ang','presyo','price','ngayon','today','current','per','kilo','kg','farmgate','how','much','the','is','of','ng'].includes(x)).slice(0,6);
- try{
-  const {data}=await sb.from('products').select('name,price,unit,location,created_at,status').eq('status','ACTIVE').order('created_at',{ascending:false}).limit(80);
-  const rows=(data||[]).filter(r=>!q.length||q.some(w=>String(r.name||'').toLowerCase().includes(w))).slice(0,8);
-  if(rows.length){const lines=rows.map(r=>`• ₱${Number(r.price||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})} / ${r.unit||'unit'} — ${r.name}${r.location?' ('+r.location+')':''}`);return `Narito ang kasalukuyang presyo sa LUNDUYAN para sa katugmang produkto:\n${lines.join('\n')}\n\nIto ay presyo ng listing sa LUNDUYAN, hindi awtomatikong presyo sa bukid o presyo sa tingi.`;}
- }catch(_){ }
- return null;
-}
-const old=window.askLUNDUYANAI;if(typeof old!=='function')return;
-window.askLUNDUYANAI=async function(text){
- const t=String(text||'').trim();if(!t)return;
- try{return await old(t);}catch(err){
-   if(isPriceQuestion(t)){const fallback=await localPriceFallback(t);if(fallback){const b=document.getElementById('botMessages');if(b){b.insertAdjacentHTML('beforeend',`<div class="bot-msg bot">${String(fallback).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`);b.scrollTop=b.scrollHeight;}return;}}
-   throw err;
- }
-};
-})();
-</script>
 
 </body>
 </html>
