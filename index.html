@@ -12914,87 +12914,88 @@ const TL={
     'No products found.':'Walang nahanap na produkto.','No messages yet.':'Wala pang mga mensahe.','No notifications yet.':'Wala pang mga abiso.','No moderation messages yet.':'Wala pang moderation messages.',
     'Are you sure you want to log out?':'Sigurado ka bang gusto mong mag-logout?','Unable to log out.':'Hindi makapag-logout.','Name is required.':'Kailangan ang pangalan.'
 };
-const reverse={};Object.keys(TL).forEach(k=>{const v=String(TL[k]||'').trim();if(v&&v!==k&&!reverse[v])reverse[v]=k;});
-window.__LUNDUYAN_EXTRA_TL__=TL;window.__LUNDUYAN_TL_TO_EN__=reverse;
 
-// ULTRA-LIGHT LANGUAGE ENGINE: never blocks the main thread with a large synchronous DOM walk.
-const tracked=new Set();
+// LUNDUYAN — FIXED TAGALOG MODE
+// No language switch, no full-page retranslation on click, no polling.
+// The interface starts and stays in Tagalog.
+localStorage.setItem('lunduyan-language','tl');
+
 const originals=new WeakMap();
 const attrOriginals=new WeakMap();
-let current=localStorage.getItem('lunduyan-language')==='tl'?'tl':'en';
-let switchToken=0;
-let timer=null;
-let observerPaused=false;
-function shouldSkip(el){return !el||el.closest?.('.lunduyan-language-global,.bot-messages,.bot-window .bot-input,script,style,textarea,input');}
-function trackText(n){
- if(!n||n.nodeType!==3||tracked.has(n))return;
- const p=n.parentElement;if(shouldSkip(p))return;
- const raw=n.nodeValue||'',key=raw.trim();if(!key)return;
- originals.set(n,raw);tracked.add(n);
+const queue=[];
+let scheduled=false;
+
+function skip(el){
+  return !el || el.closest?.('script,style,textarea,input,.bot-messages,.bot-window .bot-input');
 }
-function trackTree(root){
- if(!root||observerPaused)return;
- if(root.nodeType===3){trackText(root);return;}
- if(root.nodeType!==1||shouldSkip(root))return;
- const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
- while((n=w.nextNode()))trackText(n);
- root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(el=>{
-   if(shouldSkip(el)||attrOriginals.has(el))return;
-   const store={};['placeholder','title','aria-label'].forEach(a=>{if(el.hasAttribute(a))store[a]=el.getAttribute(a);});
-   attrOriginals.set(el,store);
- });
+function translateNode(n){
+  if(!n || n.nodeType!==3) return;
+  const p=n.parentElement;
+  if(skip(p)) return;
+  if(!originals.has(n)) originals.set(n,n.nodeValue||'');
+  const raw=originals.get(n), key=raw.trim();
+  if(!key) return;
+  const target=TL[key]||key;
+  const value=raw.replace(key,target);
+  if(n.nodeValue!==value) n.nodeValue=value;
 }
-function translateAttrs(el,l){
- if(!el||el.nodeType!==1||shouldSkip(el))return;
- const store=attrOriginals.get(el);if(!store)return;
- for(const a of ['placeholder','title','aria-label']){if(store[a]===undefined)continue;const v=l==='tl'?(TL[store[a]]||store[a]):store[a];if(el.getAttribute(a)!==v)el.setAttribute(a,v);}
+function translateElement(el){
+  if(!el || el.nodeType!==1 || skip(el)) return;
+  if(el.matches?.('[placeholder],[title],[aria-label]')){
+    let store=attrOriginals.get(el);
+    if(!store){store={}; attrOriginals.set(el,store);}
+    for(const a of ['placeholder','title','aria-label']){
+      if(el.hasAttribute(a) && store[a]===undefined) store[a]=el.getAttribute(a);
+      if(store[a]!==undefined) el.setAttribute(a,TL[store[a]]||store[a]);
+    }
+  }
 }
-function setOne(n,l){
- const raw=originals.get(n);if(raw===undefined)return;
- const key=raw.trim();if(!key)return;
- const target=l==='tl'?(TL[key]||key):key;
- const value=raw.replace(key,target);
- if(n.nodeValue!==value)n.nodeValue=value;
+function scan(root){
+  if(!root) return;
+  if(root.nodeType===3){queue.push(root);return;}
+  if(root.nodeType!==1 || skip(root)) return;
+  translateElement(root);
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  let n;
+  while((n=walker.nextNode())) queue.push(n);
+  root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(translateElement);
+  schedule();
 }
-function updateSwitch(l){const sw=document.querySelector('.lunduyan-language-global');if(sw)sw.querySelectorAll('button[data-lang]').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));}
-function applyLanguage(l){
- current=l;updateSwitch(l);
- const token=++switchToken;
- if(timer){clearTimeout(timer);timer=null;}
- const nodes=Array.from(tracked);let i=0;
- observerPaused=true;
- const chunk=()=>{
-   if(token!==switchToken){observerPaused=false;return;}
-   const end=Math.min(i+24,nodes.length);
-   for(;i<end;i++){const n=nodes[i];if(!n.isConnected){tracked.delete(n);continue;}setOne(n,l);translateAttrs(n.parentElement,l);}
-   if(i<nodes.length)timer=setTimeout(chunk,1);
-   else{timer=null;observerPaused=false;}
- };
- timer=setTimeout(chunk,0);
+function schedule(){
+  if(scheduled) return;
+  scheduled=true;
+  setTimeout(function run(){
+    let count=0;
+    while(queue.length && count<18){
+      const n=queue.shift();
+      if(n.isConnected) translateNode(n);
+      count++;
+    }
+    scheduled=false;
+    if(queue.length) schedule();
+  },0);
 }
-function mount(){
- let sw=document.querySelector('.lunduyan-language-global');
- if(!sw){
-   sw=document.createElement('div');sw.className='lunduyan-language-global';sw.setAttribute('role','group');sw.setAttribute('aria-label','Language');
-   sw.innerHTML='<button type="button" data-lang="tl" aria-label="Tagalog">Tagalog</button><button type="button" data-lang="en" aria-label="English">English</button>';
-   document.body.appendChild(sw);
-   sw.addEventListener('click',e=>{
-     const b=e.target.closest('button[data-lang]');if(!b)return;
-     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-     const next=b.dataset.lang==='tl'?'tl':'en';
-     if(next===current){updateSwitch(next);return;}
-     localStorage.setItem('lunduyan-language',next);applyLanguage(next);
-   },true);
- }
- // Initial scan is delayed so first paint and taps remain responsive.
- setTimeout(()=>{trackTree(document.body);if(current==='tl')applyLanguage('tl');else updateSwitch('en');},0);
+function hideLanguageSwitch(){
+  document.querySelectorAll('.lunduyan-language-global').forEach(el=>el.remove());
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
-const obs=new MutationObserver(records=>{
- if(observerPaused)return;
- for(const r of records)for(const n of r.addedNodes)trackTree(n);
+function boot(){
+  hideLanguageSwitch();
+  scan(document.body);
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',boot,{once:true});
+}else{
+  setTimeout(boot,0);
+}
+const observer=new MutationObserver(records=>{
+  for(const r of records){
+    for(const n of r.addedNodes) scan(n);
+  }
+  hideLanguageSwitch();
 });
-obs.observe(document.body,{childList:true,subtree:true});
+observer.observe(document.body,{childList:true,subtree:true});
+window.__LUNDUYAN_LANGUAGE_FIXED_TL__=true;
+window.currentLUNDUYANLanguage='tl';
 })();
 </script>
 
