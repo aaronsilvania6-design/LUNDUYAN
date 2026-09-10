@@ -8453,7 +8453,7 @@ body.role-farmer #buyerOrders{
   }
   const boot=()=>setTimeout(start,700);
   boot();
-  setInterval(()=>{if(typeof currentProfile!=='undefined'&&currentProfile)refresh()},5000);
+  /* performance: removed continuous profile polling */
 })();
 </script>
 <!-- =======================================================
@@ -10931,7 +10931,7 @@ setTimeout(run,700);
  function run(){ensureMobileNav();ensureFarmerAggregation();}
  run();setTimeout(run,150);setTimeout(run,500);setTimeout(run,1200);
  if(window.supabaseClient?.auth?.onAuthStateChange)window.supabaseClient.auth.onAuthStateChange(()=>setTimeout(run,100));
- setInterval(run,1800);
+ /* performance: removed continuous aggregation polling */
 })();
 </script>
 
@@ -11101,7 +11101,7 @@ function removeDuplicateAggregationButtons(){
 }
 function boot(){removeDuplicateAggregationButtons();fixAggregationButton()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-setTimeout(boot,150);setTimeout(boot,500);setTimeout(boot,1200);setInterval(boot,2000);
+setTimeout(boot,150);setTimeout(boot,500);setTimeout(boot,1200);/* performance: removed continuous button polling */
 
 /* AI: one request at a time. The Send button and quick prompts stay disabled until the answer returns. */
 window.__setLunduAIbusy=function(v){
@@ -11178,7 +11178,7 @@ window.__setLunduAIbusy=function(v){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync,{once:true});
   else sync();
   [100,300,600,1000,1500,2500,4000].forEach(function(ms){setTimeout(sync,ms);});
-  setInterval(sync,1000);
+  /* performance: removed continuous aggregation DOM polling */
 
   /* Keep mobile Messages above the bottom nav and prevent the nav from stealing taps. */
   function syncMessages(){
@@ -11193,7 +11193,7 @@ window.__setLunduAIbusy=function(v){
       nav.style.pointerEvents='auto';
     }
   }
-  setInterval(syncMessages,250);
+  /* performance: removed 250ms chat DOM polling */
   syncMessages();
 })();
 </script>
@@ -11239,7 +11239,7 @@ window.__setLunduAIbusy=function(v){
   }
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fix);else fix();
- setInterval(fix,500);
+ /* performance: removed 500ms chat input polling */
 })();
 </script>
 
@@ -12502,6 +12502,36 @@ window.__setLunduAIbusy=function(v){
 })();
 </script>
 
+\n<!-- LUNDUYAN V15 PERFORMANCE / NO BUTTON FREEZE FIX -->
+<script id="LUNDUYAN-V15-PERFORMANCE-FIX">
+(function(){
+  'use strict';
+  // Prevent accidental duplicate rapid navigation clicks from stacking work.
+  let lastNavAction = '';
+  let lastNavAt = 0;
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('#mobileBottomNav button,[data-mobile-nav]');
+    if(!btn) return;
+    const now = Date.now();
+    const action = String(btn.dataset.mobileNav || btn.getAttribute('data-mobile-nav') || btn.textContent || '').trim();
+    if(action === lastNavAction && now-lastNavAt < 250){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    lastNavAction = action;
+    lastNavAt = now;
+  }, true);
+  // Avoid smooth-scroll animations piling up on mobile taps.
+  if(window.innerWidth <= 700){
+    const oldScrollTo = window.scrollTo;
+    window.scrollTo = function(x,y){
+      if(typeof x === 'object' && x){ x.behavior='auto'; }
+      return oldScrollTo.apply(this, arguments);
+    };
+  }
+})();
+</script>
 </body>
 </html>
 
@@ -12652,7 +12682,7 @@ window.__setLunduAIbusy=function(v){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});
   else run();
   [100,300,600,1000,1800,3000].forEach(ms=>setTimeout(run,ms));
-  setInterval(run,1500);
+  /* performance: removed continuous mobile nav polling */
   window.addEventListener('resize',run,{passive:true});
 })();
 </script>
