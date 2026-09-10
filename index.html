@@ -10982,10 +10982,10 @@ setTimeout(run,700);
     window.__setLunduAIbusy?.(true);
     open();addUser(text);
     history.push({role:'user',content:text});if(history.length>MAX_HISTORY)history.splice(0,history.length-MAX_HISTORY);
-    const typingId=typing();setStatus(/(price|presyo|today|latest|current|news|trend|weather|government|market)/i.test(text)?'Checking sources…':'Thinking…');
+    const typingId=typing();setStatus(/(price|presyo|magkano|magkano ang|today|latest|current|news|trend|weather|government|market|farmgate|presyo ngayon)/i.test(text)?'Checking sources…':'Thinking…');
     try{
       if(!window.supabaseClient?.functions?.invoke)throw new Error('LUNDUYAN AI connection is not ready. Please make sure Supabase is configured.');
-      const {data,error}=await window.supabaseClient.functions.invoke('lunduyan-ai',{body:{message:text,history}});
+      const {data,error}=await window.supabaseClient.functions.invoke('lunduyan-ai',{body:{message:text,history,language:(localStorage.getItem('lunduyan-language')||'en')}});
       if(error)throw error;
       const answer=data?.answer||'I could not generate an answer right now. Please try again.';
       removeTyping(typingId);addBot(answer,data?.annotations||[]);
@@ -12721,8 +12721,190 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
     'Thinking...':'Nag-iisip...','Checking sources...':'Sinusuri ang mga source...','Send Message':'Magpadala ng Mensahe',
     'Rate Product':'I-rate ang Produkto','Reviews':'Mga Review','Price':'Presyo','Status':'Status','Available':'Available',
     'Open':'Bukas','Closed':'Sarado','Pending':'Naghihintay','Completed':'Nakumpleto','Back':'Bumalik','Next':'Susunod',
+    'Contact Number':'Numero ng Contact','Bio / About':'Bio / Tungkol sa Akin','Save Profile Changes':'I-save ang mga Pagbabago sa Profile',
+    'City / Province':'Lungsod / Probinsya','Tell people about yourself...':'Sabihin sa mga tao ang tungkol sa iyo...','Save Profile':'I-save ang Profile',
+    'Edit Profile':'I-edit ang Profile','Edit My Profile':'I-edit ang Aking Profile','Help & Safety':'Tulong at Kaligtasan',
+    'Send to Moderators':'Ipadala sa mga Moderator','Submit Report':'Isumite ang Report','Sending...':'Ipinapadala...',
+    'Please write your message first.':'Pakisulat muna ang iyong mensahe.','General feedback':'Pangkalahatang feedback',
+    'No additional details provided.':'Walang karagdagang detalye.','Enter the account you want to report.':'Ilagay ang account na gusto mong i-report.',
+    'Open Moderator Inbox':'Buksan ang Moderator Inbox','Loading moderation messages...':'Naglo-load ng moderation messages...',
+    'No moderation messages yet.':'Wala pang moderation messages.','Mark in review':'Markahan bilang nire-review','Resolve':'Lutasin',
+    'Reported account:':'Nire-report na account:','Reason:':'Dahilan:','Home':'Home','Alerts':'Mga Abiso',
+    'Target Quantity':'Target na Dami','Proposed Price':'Iminungkahing Presyo','Product Name':'Pangalan ng Produkto',
+    'Product':'Produkto','Details':'Detalye','Place Order':'Ilagay ang Order','Buyer Note':'Tala ng Buyer',
+    'Optional note for the farmer':'Opsyonal na tala para sa farmer','Rate your purchase':'I-rate ang iyong binili','Back to home':'Bumalik sa Home',
     'Welcome to LUNDUYAN':'Maligayang pagdating sa LUNDUYAN','Choose your role':'Piliin ang iyong role','Farmer':'Farmer','Buyer':'Buyer'
   };
+  Object.assign(T,{
+"Features":"Mga Tampok",
+"A better way to connect local agriculture":"Mas magandang paraan para pag-ugnayin ang lokal na agrikultura",
+"Fresh from the":"Sariwa mula sa",
+"farm.":"bukid.",
+"Closer to you.":"Mas malapit sa iyo.",
+"Discover local products, connect directly with farmers, and make every transaction feel simple, trusted, and personal.":"Tuklasin ang mga lokal na produkto, direktang kumonekta sa mga farmer, at gawing simple, maaasahan, at personal ang bawat transaksyon.",
+"Start Trading":"Magsimulang Makipagkalakalan",
+"Explore LUNDUYAN":"Tuklasin ang LUNDUYAN",
+"Built for farmers & buyers":"Para sa mga farmer at buyer",
+"Discover • Connect • Trade":"Tuklasin • Kumonekta • Makipagkalakalan",
+"LIVE MARKET":"LIVE NA PAMILIHAN",
+"Fresh today":"Sariwa ngayon",
+"Search products":"Maghanap ng mga produkto",
+"LOCAL HARVEST":"LOKAL NA ANI",
+"Fresh Tomatoes":"Sariwang Kamatis",
+"Direct from a local farmer":"Direkta mula sa lokal na farmer",
+"Fresh Greens":"Sariwang Gulay",
+"Available now":"Available ngayon",
+"Sweet Corn":"Matamis na Mais",
+"Local harvest":"Lokal na ani",
+"Direct farmer connection":"Direktang koneksyon sa farmer",
+"Trusted transactions":"Mapagkakatiwalaang mga transaksyon",
+"For Buyers":"Para sa mga Buyer",
+"Shop local":"Mamili ng lokal",
+"For Farmers":"Para sa mga Farmer",
+"Grow your reach":"Palawakin ang iyong merkado",
+"Need help?":"Kailangan ng tulong?",
+"Ask LUNDUYAN AI":"Magtanong sa LUNDUYAN AI",
+"Discover local":"Tuklasin ang lokal na",
+"products":"mga produkto",
+"Connect with":"Kumonekta sa",
+"farmers":"mga farmer",
+"Track every":"Subaybayan ang bawat",
+"transaction":"transaksyon",
+"Build trust through":"Bumuo ng tiwala sa pamamagitan ng",
+"ratings":"mga rating",
+"WHY LUNDUYAN":"BAKIT LUNDUYAN",
+"Everything agriculture needs,":"Lahat ng kailangan sa agrikultura,",
+"in one place.":"nasa isang lugar.",
+"A marketplace designed around real farmers, real buyers, and a smoother way to trade.":"Isang pamilihang ginawa para sa tunay na farmer, tunay na buyer, at mas maayos na kalakalan.",
+"FARMER":"FARMER",
+"Sell with confidence":"Magbenta nang may kumpiyansa",
+"Publish harvests, manage stock, receive orders, and build a profile buyers can trust.":"I-post ang ani, pamahalaan ang stock, tumanggap ng order, at bumuo ng profile na mapagkakatiwalaan ng mga buyer.",
+"Manage your harvest →":"Pamahalaan ang iyong ani →",
+"BUYER":"BUYER",
+"Shop closer to home":"Mamili nang mas malapit sa iyo",
+"Find fresh products, explore farmer profiles, compare options, and order with ease.":"Maghanap ng sariwang produkto, tingnan ang mga profile ng farmer, ihambing ang mga opsyon, at umorder nang madali.",
+"Explore the marketplace →":"Tuklasin ang pamilihan →",
+"TRUST":"TIWALA",
+"Every transaction matters":"Mahalaga ang bawat transaksyon",
+"Track orders, chat directly, leave ratings, and help create a stronger local marketplace.":"Subaybayan ang mga order, direktang makipag-chat, magbigay ng rating, at tumulong sa pagbuo ng mas matatag na lokal na pamilihan.",
+"Trade with transparency →":"Makipagkalakalan nang malinaw →",
+"Grow your marketplace.":"Palaguin ang iyong pamilihan.",
+"Join LUNDUYAN and connect agricultural supply with real opportunities.":"Sumali sa LUNDUYAN at iugnay ang suplay ng agrikultura sa tunay na mga oportunidad.",
+"Discover agricultural products":"Tuklasin ang mga produktong pang-agrikultura",
+"Explore farmer profiles":"Tingnan ang mga profile ng farmer",
+"Connect directly with sellers":"Direktang kumonekta sa mga nagbebenta",
+"Manage your transactions":"Pamahalaan ang iyong mga transaksyon",
+"Welcome to LUNDUYAN.":"Maligayang pagdating sa LUNDUYAN.",
+"Connect. Trade. Grow.":"Kumonekta. Makipagkalakalan. Umunlad.",
+"Create Account":"Gumawa ng Account",
+"Email or Phone Number":"Email o Numero ng Telepono",
+"Full Name":"Buong Pangalan",
+"Sign up using":"Mag-sign up gamit ang",
+"Use either your email":"Gamitin ang iyong email",
+"or":"o",
+"phone number. You only need one.":"numero ng telepono. Isa lang ang kailangan.",
+"How will you use LUNDUYAN?":"Paano mo gagamitin ang LUNDUYAN?",
+"Choose your role to personalize your marketplace experience.":"Piliin ang iyong role para maangkop ang iyong karanasan sa pamilihan.",
+"Find and buy fresh local products.":"Maghanap at bumili ng sariwang lokal na produkto.",
+"Sell your harvest and reach buyers.":"Ibenta ang iyong ani at maabot ang mga buyer.",
+"● LIVE":"● LIVE",
+"Chat":"Chat",
+"Blocked":"Naka-block",
+"+ Product":"+ Produkto",
+"Welcome,":"Maligayang pagdating,",
+"User":"User",
+"Your agricultural marketplace starts here.":"Dito nagsisimula ang iyong agricultural marketplace.",
+"● LIVE SYNC":"● LIVE SYNC",
+"Find Products":"Maghanap ng Produkto",
+"Clear":"I-clear",
+"Your marketplace dashboard is ready.":"Handa na ang iyong marketplace dashboard.",
+"Active Products":"Mga Aktibong Produkto",
+"Ongoing":"Isinasagawa",
+"COMMUNITY":"KOMUNIDAD",
+"Farmers create pools, contribute harvest, and vote on the final price.":"Gumagawa ang mga farmer ng pool, nag-aambag ng ani, at bumoboto sa panghuling presyo.",
+"Farmers can pool their harvest together. When the target is complete, buyers can purchase the full community pool.":"Maaaring pagsama-samahin ng mga farmer ang kanilang ani. Kapag kumpleto na ang target, maaaring bilhin ng mga buyer ang buong community pool.",
+"Loading farmer community pools...":"Naglo-load ng mga community pool ng farmer...",
+"Marketplace":"Pamilihan",
+"Refresh":"I-refresh",
+"Transactions":"Mga Transaksyon",
+"My Orders":"Aking mga Order",
+"What are you pooling?":"Ano ang pagsasama-samahin ninyo?",
+"Quantity needed":"Kailangang dami",
+"Offer price":"Inaalok na presyo",
+"Additional details":"Karagdagang detalye",
+"How it works:":"Paano ito gumagana:",
+"You create the farmer pool, other farmers contribute their harvest, and contributing farmers vote on the community selling price. When the target is reached, buyers can purchase the full pooled supply.":"Gumagawa ka ng farmer pool, nag-aambag ng ani ang ibang farmer, at bumoboto ang mga nag-ambag sa presyo ng community selling. Kapag naabot ang target, maaaring bilhin ng mga buyer ang buong pinagsamang suplay.",
+"Contribute to Aggregation":"Mag-ambag sa Aggregation",
+"Your contribution":"Iyong ambag",
+"Your proposed price per unit":"Iminumungkahi mong presyo bawat yunit",
+"Join Aggregation":"Sumali sa Aggregation",
+"Farmer Profile":"Profile ng Farmer",
+"Add Product":"Magdagdag ng Produkto",
+"Category":"Kategorya",
+"Vegetables":"Mga Gulay",
+"Fruits":"Mga Prutas",
+"Rice & Grains":"Bigas at Butil",
+"Livestock":"Mga Alagang Hayop",
+"Seeds & Plants":"Binhi at Halaman",
+"Other":"Iba pa",
+"Product Image":"Larawan ng Produkto",
+"Publish Product":"I-publish ang Produkto",
+"Total: ₱0.00":"Kabuuan: ₱0.00",
+"Buying Method":"Paraan ng Pagbili",
+"Competition Demo Purchase":"Demo Purchase para sa Competition",
+"Competition Demo Mode":"Competition Demo Mode",
+"No real money is charged. This creates a real demo order in Supabase, updates the available stock atomically, and sends the farmer a live notification.":"Walang totoong perang sisingilin. Gumagawa ito ng totoong demo order sa Supabase, ina-update ang available stock, at nagpapadala ng live notification sa farmer.",
+"How was your experience?":"Kumusta ang iyong karanasan?",
+"⭐ You can rate a purchase only after the order is marked":"⭐ Maaari mong i-rate ang binili mo kapag ang order ay minarkahang",
+"Submit Rating":"Isumite ang Rating",
+"Your LUNDUYAN helper":"Iyong LUNDUYAN helper",
+"How do I buy?":"Paano ako bibili?",
+"How do I sell?":"Paano ako magbebenta?",
+"Manage farmers you have blocked.":"Pamahalaan ang mga farmer na iyong na-block.",
+"Loading blocked accounts...":"Naglo-load ng mga naka-block na account...",
+"💬 Conversations":"💬 Mga Pag-uusap",
+"Select a conversation":"Pumili ng pag-uusap",
+"● LUNDUYAN Chat":"● LUNDUYAN Chat",
+"Select a conversation to start chatting.":"Pumili ng pag-uusap para magsimulang mag-chat.",
+"Feedback / report to moderators":"Feedback / report sa mga moderator",
+"Send feedback to LUNDUYAN moderators or report an account. Your message helps keep the community safe.":"Magpadala ng feedback sa mga moderator ng LUNDUYAN o mag-report ng account. Nakakatulong ang iyong mensahe para mapanatiling ligtas ang komunidad.",
+"💡 General Feedback":"💡 Pangkalahatang Feedback",
+"⚑ Report an Account":"⚑ I-report ang Account",
+"Subject":"Paksa",
+"Message":"Mensahe",
+"Account to report":"Account na ire-report",
+"Reason":"Dahilan",
+"Spam":"Spam",
+"Scam or suspicious activity":"Scam o kahina-hinalang aktibidad",
+"Harassment or abuse":"Pangha-harass o pang-aabuso",
+"Fake account":"Pekeng account",
+"Inappropriate content":"Hindi naaangkop na content",
+"Details":"Detalye",
+"Moderator Inbox":"Inbox ng Moderator",
+"User feedback and safety reports":"Feedback ng user at safety reports",
+"Loading moderation messages...":"Naglo-load ng mga mensahe sa moderation...",
+"No moderation messages yet.":"Wala pang moderation messages.",
+"Mark in review":"Markahan bilang nire-review",
+"Reported account:":"Nire-report na account:",
+"Reason:":"Dahilan:",
+"Target Quantity":"Target na Dami",
+"Proposed Price":"Iminungkahing Presyo",
+"Product Name":"Pangalan ng Produkto",
+"Place Order":"Mag-order",
+"Buyer Note":"Tala ng Buyer",
+"Optional note for the farmer":"Opsyonal na tala para sa farmer",
+"Rate your purchase":"I-rate ang iyong binili",
+"Back to home":"Bumalik sa Home",
+"Choose your role":"Piliin ang iyong role",
+"Sign Up":"Mag-sign up"
+  });
+  Object.assign(T,{
+    'Email':'Email','Phone Number':'Numero ng Telepono','Password':'Password','Ratings':'Mga Rating','Blocked Accounts':'Mga Naka-block na Account',
+    '✓ Discover agricultural products':'✓ Tuklasin ang mga produktong pang-agrikultura','✓ Explore farmer profiles':'✓ Tingnan ang mga profile ng farmer','✓ Connect directly with sellers':'✓ Direktang kumonekta sa mga nagbebenta','✓ Manage your transactions':'✓ Pamahalaan ang iyong mga transaksyon',
+    '🤝 Direct farmer connection':'🤝 Direktang koneksyon sa farmer','🔒 Trusted transactions':'🔒 Mapagkakatiwalaang mga transaksyon','Moderator inbox; only shown to MODERATOR/ADMIN roles':'Inbox ng moderator; para lamang sa MODERATOR/ADMIN',
+    'KG':'KG','Sack':'Sako','Ton':'Tonelada','Bundle':'Bundle','Piece':'Piraso','kg':'kg','piece':'piraso','sack':'sako','box':'kahon','dozen':'dosena',
+    'COMPLETED':'NAKUMPLETO'
+  });
   const original=new WeakMap();
   function translate(lang){
     document.querySelectorAll('body *').forEach(el=>{
@@ -12766,5 +12948,165 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
   new MutationObserver(()=>{clearTimeout(window.__lunduyanLangTimer);window.__lunduyanLangTimer=setTimeout(()=>translate(localStorage.getItem('lunduyan-language')||'en'),120)}).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+
+<!-- =========================================================
+ LUNDUYAN MOBILE PROFILE + LANGUAGE FINAL POLISH
+ ========================================================= -->
+<style id="LUNDUYAN-MOBILE-PROFILE-FINAL">
+/* Keep the app usable on narrow phones: no fixed navigation over modals. */
+@media (max-width:700px){
+  body{overflow-x:hidden!important;}
+
+  /* A modal is a separate workspace. Hide the bottom nav while it is open
+     so Feedback / Suggestion and Logout can never be covered by it. */
+  body.lunduyan-modal-open #mobileBottomNav,
+  body.lunduyan-modal-open .mobile-bottom-nav{
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+
+  /* Profile becomes a true full-height sheet with one internal scroll area. */
+  #myProfileModal{
+    position:fixed!important;
+    inset:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+    padding:0!important;
+    margin:0!important;
+    align-items:stretch!important;
+    justify-content:stretch!important;
+    overflow:hidden!important;
+    z-index:2147482000!important;
+  }
+  #myProfileModal>.modal-card{
+    width:100%!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    margin:0!important;
+    border-radius:0!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  #myProfileModal>.modal-card>.modal-header{
+    flex:0 0 auto!important;
+    min-height:64px!important;
+    padding:12px 14px!important;
+    z-index:30!important;
+  }
+  #myProfileModal .modal-header h2{font-size:20px!important;}
+  #myProfileModal .modal-header .close{
+    flex:0 0 42px!important;
+    width:42px!important;height:42px!important;
+  }
+  #myProfileContent{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding:16px 16px calc(210px + env(safe-area-inset-bottom))!important;
+    scroll-padding-bottom:210px!important;
+  }
+
+  /* Feedback and Logout are always one clean vertical action stack. */
+  #myProfileModal .lunduyan-profile-actions{
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    z-index:25!important;
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+    margin:18px -2px 0!important;
+    padding:14px 2px calc(14px + env(safe-area-inset-bottom))!important;
+    background:linear-gradient(to bottom,rgba(255,255,255,.72),#fff 18px)!important;
+    border-top:1px solid #dfe9e2!important;
+  }
+  #myProfileModal .lunduyan-profile-actions button{
+    width:100%!important;
+    min-height:54px!important;
+    margin:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    white-space:normal!important;
+    font-size:15px!important;
+  }
+  #myProfileModal .lunduyan-feedback-btn{
+    background:#effaf3!important;
+    color:#11733a!important;
+    border:1px solid #bfe3c9!important;
+  }
+  #myProfileModal .lunduyan-logout-btn{
+    background:#111!important;
+    color:#fff!important;
+    border:1px solid #111!important;
+  }
+
+  /* Stop the floating language switch from sitting on top of profile fields. */
+  .lunduyan-language-global{
+    right:10px!important;
+    top:max(10px,env(safe-area-inset-top))!important;
+    z-index:2147481000!important;
+  }
+  body.lunduyan-modal-open .lunduyan-language-global{
+    top:74px!important;
+  }
+
+  /* Better phone form spacing. */
+  #myProfileContent input,
+  #myProfileContent textarea,
+  #myProfileContent select{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+  #myProfileContent textarea{min-height:150px!important;}
+}
+
+@media (min-width:701px){
+  #myProfileModal .lunduyan-profile-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+  }
+}
+</style>
+<script id="LUNDUYAN-MOBILE-PROFILE-FINAL-JS">
+(function(){
+  'use strict';
+  function syncModalState(){
+    const open=!!document.querySelector('.modal:not(.hidden)');
+    document.body.classList.toggle('lunduyan-modal-open',open);
+  }
+  function boot(){
+    const open=!!document.querySelector('.modal:not(.hidden)');
+    document.body.classList.toggle('lunduyan-modal-open',open);
+    const nav=document.getElementById('mobileBottomNav');
+    if(!nav)return;
+    if(open){
+      nav.style.setProperty('display','none','important');
+      nav.style.setProperty('visibility','hidden','important');
+      nav.style.setProperty('pointer-events','none','important');
+    }else if(window.innerWidth<=700){
+      const app=document.getElementById('app');
+      const logged=!!(app && !app.classList.contains('hidden') && (window.currentProfile||window.currentUser));
+      if(logged){
+        nav.style.setProperty('display','grid','important');
+        nav.style.setProperty('visibility','visible','important');
+        nav.style.setProperty('pointer-events','auto','important');
+      }
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+  else boot();
+  new MutationObserver(syncModalState).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+
+
 </body>
 </html>
