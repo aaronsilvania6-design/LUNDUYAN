@@ -12914,7 +12914,9 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
         const raw=original.has(node)?original.get(node):node.nodeValue;
         if(!original.has(node)) original.set(node,raw);
         const key=raw.trim(); if(!key) continue;
-        const val=lang==='tl'?(T[key]||key):key;
+        const extra=window.__LUNDUYAN_EXTRA_TL__||{};
+        const reverse=window.__LUNDUYAN_TL_TO_EN__||{};
+        const val=lang==='tl'?(T[key]||extra[key]||key):(reverse[key]||key);
         if(raw===key) node.nodeValue=val; else node.nodeValue=raw.replace(key,val);
       }
       ['placeholder','title','aria-label'].forEach(attr=>{
@@ -12922,7 +12924,7 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
         const raw=el.getAttribute(attr); const key=raw.trim();
         if(!el.dataset.lunduyanLangOriginal) el.dataset.lunduyanLangOriginal=raw;
         const base=el.dataset.lunduyanLangOriginal.trim();
-        el.setAttribute(attr,lang==='tl'?(T[base]||base):base);
+        const extra=window.__LUNDUYAN_EXTRA_TL__||{}; const reverse=window.__LUNDUYAN_TL_TO_EN__||{}; el.setAttribute(attr,lang==='tl'?(T[base]||extra[base]||base):(reverse[base]||base));
       });
     });
     document.documentElement.lang=lang==='tl'?'fil':'en';
@@ -12943,6 +12945,8 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
     if(!w){w=makeSwitch('lunduyan-language-global');document.body.appendChild(w)}
     translate(localStorage.getItem('lunduyan-language')||'en');
   }
+  // Also include the main translator dictionary in the reverse map.
+  try{ const reverse=window.__LUNDUYAN_TL_TO_EN__||{}; Object.keys(T).forEach(k=>{ const v=String(T[k]||'').trim(); if(v && v!==k && !reverse[v]) reverse[v]=k; }); window.__LUNDUYAN_TL_TO_EN__=reverse; }catch(e){}
   window.setLunduyanLanguage=translate;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
   new MutationObserver(()=>{clearTimeout(window.__lunduyanLangTimer);window.__lunduyanLangTimer=setTimeout(()=>translate(localStorage.getItem('lunduyan-language')||'en'),120)}).observe(document.body,{childList:true,subtree:true});
@@ -13219,7 +13223,7 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
 
     let feedback=actions.querySelector('.lunduyan-feedback-btn');
     if(!feedback){feedback=document.createElement('button');feedback.type='button';feedback.className='lunduyan-feedback-btn';actions.appendChild(feedback);}
-    feedback.textContent='💡 Feedback / Suggestion';
+    feedback.textContent=(localStorage.getItem('lunduyan-language')==='tl'?'💡 Feedback / Mungkahi':'💡 Feedback / Suggestion');
     feedback.onclick=()=>window.openModerationFeedback&&window.openModerationFeedback('FEEDBACK');
 
     let manage=box.querySelector('.mobile-blocked-management');
@@ -13229,13 +13233,13 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
     }
     let mb=manage.querySelector('button');
     if(!mb){mb=document.createElement('button');mb.type='button';manage.appendChild(mb);}
-    mb.textContent='🛡️ Manage Blocked Accounts';
+    mb.textContent=(localStorage.getItem('lunduyan-language')==='tl'?'🛡️ Pamahalaan ang mga Naka-block na Account':'🛡️ Manage Blocked Accounts');
     mb.onclick=()=>window.openBlockedAccounts&&window.openBlockedAccounts();
 
     if(canModerate()){
       let mod=box.querySelector('.lunduyan-moderator-btn');
       if(!mod){mod=document.createElement('button');mod.type='button';mod.className='lunduyan-moderator-btn primary-btn';box.appendChild(mod);}
-      mod.textContent='🛡️ Open Moderator Inbox';
+      mod.textContent=(localStorage.getItem('lunduyan-language')==='tl'?'🛡️ Buksan ang Moderator Inbox':'🛡️ Open Moderator Inbox');
       mod.onclick=()=>window.openModeratorInbox&&window.openModeratorInbox();
     }else{
       box.querySelectorAll('.lunduyan-moderator-btn').forEach(x=>x.remove());
@@ -13244,7 +13248,7 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
     let logout=actions.querySelector('.lunduyan-logout-btn');
     if(!logout){logout=box.querySelector('.lunduyan-logout-btn');}
     if(!logout){logout=document.createElement('button');logout.type='button';logout.className='lunduyan-logout-btn';actions.appendChild(logout);}
-    logout.textContent='↪ Logout';
+    logout.textContent=(localStorage.getItem('lunduyan-language')==='tl'?'↪ Mag-logout':'↪ Logout');
     logout.onclick=async e=>{
       e.preventDefault();e.stopPropagation();
       if(window.__lunduyanLoggingOut)return;
@@ -13323,9 +13327,50 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
     'How do I sell a product?':'Paano ako magbebenta ng produkto?','How do I manage orders?':'Paano ko pamamahalaan ang mga order?',
     'How do I edit my profile?':'Paano ko ie-edit ang profile ko?','How do I block a buyer?':'Paano ko iba-block ang isang buyer?',
     'How do I buy a product?':'Paano ako bibili ng produkto?','How do I message a farmer?':'Paano ako magme-message sa farmer?',
-    'How do I track my order?':'Paano ko susubaybayan ang order ko?','How do I block a farmer?':'Paano ko iba-block ang isang farmer?'
+    'How do I track my order?':'Paano ko susubaybayan ang order ko?','How do I block a farmer?':'Paano ko iba-block ang isang farmer?',
+    'Profile':'Profile','My Profile':'Aking Profile','Edit profile':'I-edit ang profile','Account':'Account','Account Settings':'Mga Setting ng Account',
+    'Dashboard':'Dashboard','Home':'Home','Products':'Mga Produkto','Product':'Produkto','Product Details':'Detalye ng Produkto','Product name':'Pangalan ng produkto',
+    'Price':'Presyo','Price per unit':'Presyo bawat yunit','Quantity':'Dami','Unit':'Yunit','Stock':'Stock','Location':'Lokasyon','Description':'Paglalarawan',
+    'Category':'Kategorya','Farmer':'Farmer','Buyer':'Buyer','Seller':'Nagbebenta','Customer':'Mamimili','Marketplace':'Pamilihan',
+    'Search':'Maghanap','Search products':'Maghanap ng mga produkto','Search farmers':'Maghanap ng mga farmer','Filter':'Salain','Sort':'Ayusin','Apply':'Ilapat','Reset':'I-reset',
+    'View Details':'Tingnan ang Detalye','View Product':'Tingnan ang Produkto','View Profile':'Tingnan ang Profile','See More':'Tingnan Pa','See Less':'Bawasan',
+    'Add to Cart':'Idagdag sa Cart','Buy Now':'Bumili Ngayon','Checkout':'Checkout','Order':'Order','Orders':'Mga Order','My Orders':'Aking mga Order',
+    'Order Details':'Detalye ng Order','Order Status':'Status ng Order','Order History':'Kasaysayan ng Order','Transaction':'Transaksyon','Transactions':'Mga Transaksyon',
+    'Pending':'Naghihintay','Processing':'Pinoproseso','Confirmed':'Nakumpirma','Accepted':'Tinanggap','Rejected':'Tinanggihan','Completed':'Nakumpleto','Cancelled':'Kinansela','Canceled':'Kinansela',
+    'Available':'Available','Unavailable':'Hindi Available','Out of stock':'Ubos na ang stock','In stock':'May stock','Low stock':'Kaunti na ang stock',
+    'Messages':'Mga Mensahe','Message':'Mensahe','Send Message':'Magpadala ng Mensahe','Send':'Ipadala','Reply':'Sumagot','Conversation':'Pag-uusap','Conversations':'Mga Pag-uusap',
+    'Notifications':'Mga Abiso','Alerts':'Mga Abiso','Notification':'Abiso','Mark all as read':'Markahan lahat bilang nabasa','No notifications yet.':'Wala pang mga abiso.',
+    'Profile updated successfully.':'Matagumpay na na-update ang profile.','Product published successfully.':'Matagumpay na na-publish ang produkto.','Changes saved successfully.':'Matagumpay na na-save ang mga pagbabago.',
+    'Failed to save changes.':'Hindi na-save ang mga pagbabago.','Something went wrong.':'May nangyaring problema.','Please try again.':'Pakisubukang muli.','Loading':'Naglo-load','Loading...':'Naglo-load...',
+    'Create':'Gumawa','Create Product':'Gumawa ng Produkto','Create Community Pool':'Gumawa ng Community Pool','Create Farmer Pool':'Gumawa ng Farmer Pool',
+    'Community Aggregations':'Community Aggregation','Community Aggregation':'Community Aggregation','Community Pool':'Community Pool','Farmer Pool':'Farmer Pool',
+    'Contributions':'Mga Ambag','Contribution':'Ambag','Contribute':'Mag-ambag','Join':'Sumali','Joined':'Sumali na','Target':'Target','Target Quantity':'Target na Dami',
+    'Proposed Price':'Iminungkahing Presyo','Offer Price':'Inaalok na Presyo','Final Price':'Panghuling Presyo','Selling Price':'Presyo ng Pagbebenta','Price Voting':'Pagboto sa Presyo',
+    'Farmer Price Voting':'Pagboto ng Presyo ng mga Farmer','Vote':'Bumoto','Vote Now':'Bumoto Ngayon','Votes':'Mga Boto','Voting':'Pagboto','Voting closed':'Sarado na ang pagboto',
+    'Winner':'Nanalo','Winning Price':'Napiling Presyo','Price choices are being prepared.':'Inihahanda ang mga pagpipilian sa presyo.','Price voting in progress':'Kasalukuyang bumoboto sa presyo',
+    'Feedback / Suggestion':'Feedback / Mungkahi','Feedback':'Feedback','Suggestion':'Mungkahi','Report':'I-report','Report an Account':'I-report ang Account','Safety':'Kaligtasan',
+    'Blocked Accounts':'Mga Naka-block na Account','Manage Blocked Accounts':'Pamahalaan ang mga Naka-block na Account','Block':'I-block','Unblock':'I-unblock','Blocked':'Naka-block',
+    'Moderator Inbox':'Inbox ng Moderator','Open Moderator Inbox':'Buksan ang Moderator Inbox','Manage Blocked Accounts':'Pamahalaan ang mga Naka-block na Account',
+    'Save':'I-save','Save Changes':'I-save ang mga Pagbabago','Save Profile Changes':'I-save ang mga Pagbabago sa Profile','Cancel':'Kanselahin','Close':'Isara','Back':'Bumalik','Next':'Susunod','Done':'Tapos na',
+    'Delete':'Tanggalin','Edit':'I-edit','Update':'I-update','Confirm':'Kumpirmahin','Continue':'Magpatuloy','Skip':'Laktawan','Refresh':'I-refresh','Clear':'I-clear','Submit':'Isumite',
+    'Logout':'Mag-logout','Log out':'Mag-logout','Login':'Mag-login','Log in':'Mag-login','Sign in':'Mag-login','Sign Up':'Mag-sign up','Register':'Magparehistro','Get Started':'Magsimula',
+    'Welcome':'Maligayang pagdating','Welcome back':'Maligayang pagbabalik','Choose your role':'Piliin ang iyong role','Farmer Account':'Farmer Account','Buyer Account':'Buyer Account',
+    'Email':'Email','Email Address':'Email Address','Phone':'Telepono','Phone Number':'Numero ng Telepono','Contact Number':'Numero ng Contact','Password':'Password','Confirm Password':'Kumpirmahin ang Password',
+    'Full Name':'Buong Pangalan','First Name':'Pangalan','Last Name':'Apelyido','Bio':'Bio','Bio / About':'Bio / Tungkol sa Akin','Tell people about yourself...':'Sabihin sa mga tao ang tungkol sa iyo...',
+    'City / Province':'Lungsod / Probinsya','Municipality / Province':'Munisipalidad / Probinsya','Additional details':'Karagdagang detalye','Additional Details':'Karagdagang Detalye',
+    'How it works:':'Paano ito gumagana:','Learn more':'Matuto pa','Help':'Tulong','Help & Safety':'Tulong at Kaligtasan','Terms':'Mga Tuntunin','Privacy':'Privacy',
+    'Current prices':'Mga Kasalukuyang Presyo','Current agricultural prices':'Mga Kasalukuyang Presyo ng Agrikultura','Market prices':'Mga Presyo sa Pamilihan','Farmgate price':'Presyong farmgate','Retail price':'Presyong tingi','Wholesale price':'Presyong pakyawan',
+    'Your LUNDUYAN helper':'Iyong LUNDUYAN helper','Ask LUNDUYAN AI anything...':'Magtanong ng kahit ano sa LUNDUYAN AI...','Thinking...':'Nag-iisip...','Checking sources...':'Sinusuri ang mga source...','Connected to LUNDUYAN AI':'Nakakonekta sa LUNDUYAN AI',
+    'I could not generate an answer right now. Please try again.':'Hindi ako makabuo ng sagot ngayon. Pakisubukang muli.','Something went wrong while contacting LUNDUYAN AI.':'May problema habang kumokonekta sa LUNDUYAN AI.',
+    'No products found.':'Walang nahanap na produkto.','No messages yet.':'Wala pang mga mensahe.','No notifications yet.':'Wala pang mga abiso.','No moderation messages yet.':'Wala pang moderation messages.',
+    'Are you sure you want to log out?':'Sigurado ka bang gusto mong mag-logout?','Unable to log out.':'Hindi makapag-logout.','Name is required.':'Kailangan ang pangalan.'
   };
   window.__LUNDUYAN_EXTRA_TL__=extra;
+  // Build a Tagalog -> English reverse dictionary so English mode also converts
+  // UI strings that were originally hard-coded in Tagalog.
+  const reverse=window.__LUNDUYAN_TL_TO_EN__||{};
+  try{ Object.keys(extra).forEach(k=>{ const v=String(extra[k]||'').trim(); if(v && v!==k && !reverse[v]) reverse[v]=k; }); }catch(e){}
+  window.__LUNDUYAN_TL_TO_EN__=reverse;
   function merge(){
     try{
       // The original translator keeps its dictionary private, so patch matching DOM text directly
@@ -13338,12 +13383,13 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
           const raw=(n.nodeValue||'');const key=raw.trim();if(!key||!extra[key])return;
           if(!n.__lunduyanExtraOriginal)n.__lunduyanExtraOriginal=raw;
           const lang=localStorage.getItem('lunduyan-language')||'en';
-          n.nodeValue=lang==='tl'?raw.replace(key,extra[key]):n.__lunduyanExtraOriginal;
+          const reverse=window.__LUNDUYAN_TL_TO_EN__||{};
+          n.nodeValue=lang==='tl'?raw.replace(key,extra[key]):(reverse[key]||n.__lunduyanExtraOriginal);
         });
         ['placeholder','title','aria-label'].forEach(a=>{
           if(!el.hasAttribute(a))return; const key=el.getAttribute(a).trim();
           if(!extra[key])return; if(!el.dataset.extraOriginal)el.dataset.extraOriginal=el.getAttribute(a);
-          el.setAttribute(a,(localStorage.getItem('lunduyan-language')||'en')==='tl'?extra[key]:el.dataset.extraOriginal);
+          const reverse=window.__LUNDUYAN_TL_TO_EN__||{}; el.setAttribute(a,(localStorage.getItem('lunduyan-language')||'en')==='tl'?extra[key]:(reverse[key]||el.dataset.extraOriginal));
         });
       });
     }catch(e){console.warn('Tagalog coverage:',e)}
@@ -13353,5 +13399,30 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
 })();
 </script>
 
+
+<style id="LUNDUYAN-TRANSLATION-PROFILE-FINAL-V2">
+/* FINAL mobile profile: green shell, white content, every action reachable by scrolling. */
+#myProfileModal{background:rgba(5,67,28,.68)!important;}
+#myProfileModal>.modal-card{background:#199A48!important;}
+#myProfileModal #myProfileContent{background:#eaf8ef!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding-bottom:170px!important;}
+#myProfileModal .lunduyan-profile-actions{position:static!important;display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:18px!important;padding:14px 0 20px!important;background:transparent!important;border-top:1px solid #c6e2ce!important;}
+#myProfileModal .lunduyan-profile-actions button,#myProfileModal .mobile-blocked-management button,#myProfileModal .lunduyan-moderator-btn{position:static!important;width:100%!important;min-height:54px!important;box-sizing:border-box!important;}
+#myProfileModal .mobile-blocked-management{margin:0!important;}
+@media(max-width:700px){#myProfileModal #myProfileContent{padding:14px 14px 180px!important;} #myProfileModal .lunduyan-profile-actions{padding-bottom:30px!important;} }
+</style>
+<script id="LUNDUYAN-TRANSLATION-PROFILE-FINAL-V2-JS">
+(function(){
+ const oldSet=window.setLunduyanLanguage;
+ function refreshProfileActions(){
+   const tl=(localStorage.getItem('lunduyan-language')||'en')==='tl';
+   document.querySelectorAll('.lunduyan-feedback-btn').forEach(b=>b.textContent=tl?'💡 Feedback / Mungkahi':'💡 Feedback / Suggestion');
+   document.querySelectorAll('.mobile-blocked-management button').forEach(b=>b.textContent=tl?'🛡️ Pamahalaan ang mga Naka-block na Account':'🛡️ Manage Blocked Accounts');
+   document.querySelectorAll('.lunduyan-moderator-btn').forEach(b=>b.textContent=tl?'🛡️ Buksan ang Moderator Inbox':'🛡️ Open Moderator Inbox');
+   document.querySelectorAll('.lunduyan-logout-btn').forEach(b=>b.textContent=tl?'↪ Mag-logout':'↪ Logout');
+ }
+ if(typeof oldSet==='function'){window.setLunduyanLanguage=function(lang){oldSet(lang);setTimeout(refreshProfileActions,30);};}
+ setInterval(refreshProfileActions,500);
+})();
+</script>
 </body>
 </html>
