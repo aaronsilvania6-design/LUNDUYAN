@@ -6196,31 +6196,27 @@ LOGOUT
 ========================================================= */
 
 async function logout(){
-  // Close the visible app immediately. Do not make the user wait for network/signOut cleanup.
-  const app=document.getElementById("app");
-  const landing=document.getElementById("landingScreen");
-  const auth=document.getElementById("authScreen");
-  document.querySelectorAll(".modal").forEach(m=>m.classList.add("hidden"));
-  document.getElementById("notificationPanel")?.classList.add("hidden");
-  document.getElementById("botWindow")?.classList.add("hidden");
-  document.getElementById("mobileBottomNav")?.style.setProperty("display","none","important");
-  app?.classList.add("hidden");
-  auth?.classList.add("hidden");
-  landing?.classList.remove("hidden");
-  window.scrollTo(0,0);
+  // Reset the UI first so Android/MIT App Inventor WebView never leaves a stuck app screen.
+  resetLunduyanClientState();
 
-  // Sign out in the background; the landing screen is already visible.
-  const channels=[messageChannel,orderChannel,productChannel,notificationChannel,reviewChannel].filter(Boolean);
-  messageChannel=orderChannel=productChannel=notificationChannel=reviewChannel=null;
   try{
-    await Promise.allSettled(channels.map(ch=>supabaseClient.removeChannel(ch)));
-    await supabaseClient.auth.signOut();
-  }catch(e){ console.warn("LUNDUYAN logout cleanup:",e); }
-  currentUser=null;
-  currentProfile=null;
-  currentConversation=null;
-  window.currentUser=null;
-  window.currentProfile=null;
+    const channels=[messageChannel,orderChannel,productChannel,notificationChannel,reviewChannel].filter(Boolean);
+    channels.forEach(ch=>{ try{ supabaseClient.removeChannel(ch); }catch(e){} });
+    await supabaseClient.auth.signOut({scope:'local'});
+  }catch(e){
+    console.warn('LUNDUYAN logout cleanup:',e);
+  }
+
+  // Clear only Supabase auth/session storage entries; keep app preferences intact.
+  try{
+    Object.keys(localStorage).forEach(key=>{
+      if(/^sb-[^:]+-auth-token$/.test(key) || key.toLowerCase().includes('supabase.auth.token')){
+        localStorage.removeItem(key);
+      }
+    });
+  }catch(e){}
+
+  resetLunduyanClientState();
 }
 
 
@@ -6254,21 +6250,47 @@ async function checkSession(){
 }
 
 
+function resetLunduyanClientState(){
+  try{
+    [messageChannel,orderChannel,productChannel,notificationChannel,reviewChannel].filter(Boolean).forEach(ch=>{
+      try{ supabaseClient.removeChannel(ch); }catch(e){}
+    });
+  }catch(e){}
+  messageChannel=orderChannel=productChannel=notificationChannel=reviewChannel=null;
+  currentUser=null;
+  currentProfile=null;
+  currentConversation=null;
+  window.currentUser=null;
+  window.currentProfile=null;
+  window.__buyerBlockedSellerIds=new Set();
+  document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden'));
+  document.getElementById('notificationPanel')?.classList.add('hidden');
+  document.getElementById('botWindow')?.classList.add('hidden');
+  document.getElementById('app')?.classList.add('hidden');
+  document.getElementById('authScreen')?.classList.add('hidden');
+  document.getElementById('landingScreen')?.classList.remove('hidden');
+  document.getElementById('mobileBottomNav')?.style.setProperty('display','none','important');
+  document.body.classList.remove('auth-view','role-farmer','role-buyer');
+  document.querySelectorAll('.profile-block-btn').forEach(btn=>{
+    btn.dataset.blocked='0';
+    btn.textContent='⚫ Block';
+  });
+  window.scrollTo(0,0);
+}
+
 supabaseClient
 .auth
 .onAuthStateChange(
   async(event,session)=>{
 
-    if(
-      event === "SIGNED_IN" &&
-      session
-    ){
-
-      await initializeApp(
-        session.user
-      );
+    if(event === "SIGNED_IN" && session){
+      await initializeApp(session.user);
+      return;
     }
 
+    if(event === "SIGNED_OUT" || !session){
+      resetLunduyanClientState();
+    }
   }
 );
 
@@ -12935,3 +12957,4 @@ window.askLUNDUYANAI=async function(text){
 
 </body>
 </html>
+
