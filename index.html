@@ -13424,5 +13424,556 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
  setInterval(refreshProfileActions,500);
 })();
 </script>
+
+<!-- =========================================================
+ LUNDUYAN FINAL MOBILE PROFILE OVERRIDE — LAST WORD
+ Fixes: green profile shell, always-visible actions, no bottom-nav
+ interception, and a single internal scroll area on phones.
+ ========================================================= -->
+<style id="LUNDUYAN-FINAL-MOBILE-PROFILE-LAST-WORD">
+  /* Profile itself is green; the editable area stays a readable light green. */
+  #myProfileModal{background:rgba(4,82,34,.72)!important;z-index:2147483000!important;}
+  #myProfileModal>.modal-card{
+    background:#199A48!important;
+    border:0!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  #myProfileModal>.modal-card>.profile-modal-header,
+  #myProfileModal>.modal-card>.modal-header{
+    flex:0 0 auto!important;
+    background:#199A48!important;
+    color:#fff!important;
+    border:0!important;
+    min-height:68px!important;
+    padding:14px 16px!important;
+    position:sticky!important;
+    top:0!important;
+    z-index:100!important;
+  }
+  #myProfileModal .profile-modal-header strong,
+  #myProfileModal .modal-header strong,
+  #myProfileModal .modal-header h2,
+  #myProfileModal .modal-header h3{color:#fff!important;}
+  #myProfileModal .profile-modal-header .close,
+  #myProfileModal .modal-header .close{
+    background:#111!important;color:#fff!important;border:2px solid #111!important;
+    width:44px!important;height:44px!important;min-width:44px!important;
+    border-radius:50%!important;display:inline-flex!important;
+    align-items:center!important;justify-content:center!important;
+    font-size:25px!important;font-weight:900!important;line-height:1!important;
+  }
+  #myProfileContent{
+    flex:1 1 auto!important;min-height:0!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    background:#eaf8ef!important;
+    padding:18px!important;
+    padding-bottom:36px!important;
+    overscroll-behavior:contain!important;
+  }
+  #myProfileContent form{
+    width:100%!important;box-sizing:border-box!important;
+    background:#fff!important;border:1px solid #cfe4d6!important;
+    border-radius:20px!important;padding:18px!important;
+    margin:0 0 14px!important;
+  }
+  #myProfileContent input,#myProfileContent textarea,#myProfileContent select{
+    width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+  }
+  #myProfileContent .profile-edit-grid{grid-template-columns:1fr 1fr!important;gap:12px!important;}
+  #myProfileContent .profile-edit-grid .full{grid-column:1/-1!important;}
+
+  /* All account actions live in one normal-flow block. Nothing is fixed over the nav. */
+  #myProfileModal .lunduyan-profile-actions{
+    position:static!important;display:grid!important;grid-template-columns:1fr!important;
+    width:100%!important;box-sizing:border-box!important;gap:10px!important;
+    margin:14px 0 0!important;padding:14px 0 8px!important;
+    background:transparent!important;border-top:1px solid #bddcc8!important;
+  }
+  #myProfileModal .lunduyan-profile-actions button,
+  #myProfileModal .mobile-blocked-management button,
+  #myProfileModal .lunduyan-moderator-btn{
+    position:static!important;float:none!important;clear:both!important;
+    width:100%!important;min-width:0!important;min-height:54px!important;
+    box-sizing:border-box!important;margin:0!important;z-index:1!important;
+    pointer-events:auto!important;touch-action:manipulation!important;
+  }
+  #myProfileModal .lunduyan-feedback-btn{
+    background:#fff!important;color:#11733A!important;border:2px solid #199A48!important;
+    border-radius:14px!important;font-weight:900!important;
+  }
+  #myProfileModal .lunduyan-logout-btn{
+    background:#111!important;color:#fff!important;border:2px solid #111!important;
+    border-radius:14px!important;font-weight:900!important;
+  }
+  #myProfileModal .mobile-blocked-management{
+    display:block!important;position:static!important;width:100%!important;
+    box-sizing:border-box!important;margin:0 0 10px!important;padding:0!important;
+    border:0!important;background:transparent!important;
+  }
+  #myProfileModal .mobile-blocked-management button{
+    background:#11733A!important;color:#fff!important;border:2px solid #11733A!important;
+    border-radius:14px!important;font-weight:900!important;
+  }
+  #myProfileModal .lunduyan-moderator-btn{
+    background:#16833b!important;color:#fff!important;border:2px solid #16833b!important;
+    border-radius:14px!important;font-weight:900!important;
+  }
+
+  /* When Profile is open, the mobile bottom navigation cannot sit on top of it. */
+  body.lunduyan-profile-open #mobileBottomNav,
+  body.lunduyan-profile-open .mobile-bottom-nav{
+    display:none!important;visibility:hidden!important;pointer-events:none!important;
+  }
+
+  @media(max-width:700px){
+    #myProfileModal{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;padding:0!important;margin:0!important;align-items:stretch!important;justify-content:stretch!important;}
+    #myProfileModal>.modal-card{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;}
+    #myProfileContent{padding:14px 14px 34px!important;}
+    #myProfileContent .profile-edit-grid{grid-template-columns:1fr!important;gap:10px!important;}
+    #myProfileContent .profile-edit-grid .full{grid-column:auto!important;}
+    #myProfileContent form{padding:14px!important;border-radius:16px!important;}
+    #myProfileContent textarea{min-height:145px!important;}
+  }
+</style>
+<script id="LUNDUYAN-FINAL-MOBILE-PROFILE-LAST-WORD-JS">
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const lang=()=>localStorage.getItem('lunduyan-language')==='tl';
+  const profile=()=>window.currentProfile || (typeof currentProfile!=='undefined'?currentProfile:null);
+  const user=()=>window.currentUser || (typeof currentUser!=='undefined'?currentUser:null);
+  const canModerate=()=>{
+    const p=profile(),u=user(),r=String(p?.role||'').toUpperCase();
+    return !!p && (p.is_maker===true || String(u?.user_metadata?.is_maker||'').toLowerCase()==='true' || ['MODERATOR','ADMIN','DEVELOPER'].includes(r));
+  };
+  function setText(el,tl,en){if(el){el.textContent=lang()?tl:en;}}
+  function ensureProfileActions(){
+    const modal=$('myProfileModal'),box=$('myProfileContent');
+    if(!modal||!box||modal.classList.contains('hidden')) return;
+
+    /* Remove duplicate action containers, keeping the first. */
+    const actionBoxes=[...box.querySelectorAll('.lunduyan-profile-actions')];
+    let actions=actionBoxes[0];
+    actionBoxes.slice(1).forEach(x=>x.remove());
+    if(!actions){
+      actions=document.createElement('div');
+      actions.className='lunduyan-profile-actions';
+      box.appendChild(actions);
+    }
+
+    /* Feedback / Suggestion — ALWAYS present. */
+    let feedback=actions.querySelector('.lunduyan-feedback-btn');
+    if(!feedback){
+      feedback=document.createElement('button');
+      feedback.type='button';feedback.className='lunduyan-feedback-btn';
+      actions.insertBefore(feedback,actions.firstChild||null);
+    }
+    setText(feedback,'💡 Feedback / Mungkahi','💡 Feedback / Suggestion');
+    feedback.onclick=e=>{e.preventDefault();e.stopPropagation();window.openModerationFeedback?.('FEEDBACK');};
+
+    /* Move the blocked manager into a predictable position before actions. */
+    let manage=box.querySelector('.mobile-blocked-management');
+    if(!manage){
+      manage=document.createElement('div');manage.className='mobile-blocked-management';
+      box.insertBefore(manage,actions);
+    }else if(manage.nextElementSibling!==actions){
+      box.insertBefore(manage,actions);
+    }
+    let mb=manage.querySelector('button');
+    if(!mb){mb=document.createElement('button');mb.type='button';manage.appendChild(mb);}
+    setText(mb,'🛡️ Pamahalaan ang mga Naka-block na Account','🛡️ Manage Blocked Accounts');
+    mb.onclick=e=>{e.preventDefault();e.stopPropagation();window.openBlockedAccounts?.();};
+
+    /* Moderator inbox only for maker/mod/admin/developer. */
+    let mod=box.querySelector('.lunduyan-moderator-btn');
+    if(canModerate()){
+      if(!mod){mod=document.createElement('button');mod.type='button';mod.className='lunduyan-moderator-btn';box.appendChild(mod);}
+      setText(mod,'🛡️ Buksan ang Moderator Inbox','🛡️ Open Moderator Inbox');
+      mod.onclick=e=>{e.preventDefault();e.stopPropagation();window.openModeratorInbox?.();};
+      box.insertBefore(mod,actions);
+    }else if(mod) mod.remove();
+
+    /* Exactly one Logout, and it lives inside the actions block. */
+    [...box.querySelectorAll('.lunduyan-logout-btn')].slice(1).forEach(x=>x.remove());
+    let logout=actions.querySelector('.lunduyan-logout-btn') || box.querySelector('.lunduyan-logout-btn');
+    if(!logout){logout=document.createElement('button');logout.type='button';logout.className='lunduyan-logout-btn';actions.appendChild(logout);}
+    if(logout.parentElement!==actions)actions.appendChild(logout);
+    setText(logout,'↪ Mag-logout','↪ Logout');
+    logout.onclick=async e=>{
+      e.preventDefault();e.stopPropagation();
+      if(window.__lunduyanLoggingOut)return;
+      const ok=confirm(lang()?'Sigurado ka bang gusto mong mag-logout?':'Are you sure you want to log out?');
+      if(!ok)return;
+      window.__lunduyanLoggingOut=true;
+      try{if(typeof window.logout==='function')await window.logout();else if(window.supabaseClient?.auth)await window.supabaseClient.auth.signOut();}
+      catch(err){console.error(err);alert(err?.message||'Unable to log out.');window.__lunduyanLoggingOut=false;}
+    };
+
+    /* Remove any other visible Logout outside Profile. */
+    document.querySelectorAll('button,a').forEach(b=>{
+      if(!/\b(?:logout|mag-logout)\b/i.test((b.textContent||'').trim()))return;
+      if(!b.closest('#myProfileModal')) b.style.setProperty('display','none','important');
+    });
+  }
+  function syncProfileOpen(){
+    const modal=$('myProfileModal');
+    const open=!!modal&&!modal.classList.contains('hidden');
+    document.body.classList.toggle('lunduyan-profile-open',open);
+    if(open){
+      const nav=$('mobileBottomNav');
+      nav?.style.setProperty('display','none','important');
+      nav?.style.setProperty('pointer-events','none','important');
+      ensureProfileActions();
+      requestAnimationFrame(ensureProfileActions);
+      setTimeout(ensureProfileActions,80);
+      setTimeout(ensureProfileActions,300);
+    }
+  }
+  /* Watch both the modal and dynamically-rendered profile content. */
+  const observer=new MutationObserver(()=>{syncProfileOpen();});
+  observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+  syncProfileOpen();
+  setInterval(()=>{syncProfileOpen();ensureProfileActions();},500);
+  window.__lunduyanFinalProfileEnsure=ensureProfileActions;
+})();
+</script>
+
 </body>
 </html>
+<!-- =========================================================
+ LUNDUYAN FINAL HOTFIX: SINGLE PROFILE ACTION STACK + MOBILE
+ AGGREGATION CONTRIBUTION / PRICE VOTING RELIABILITY
+ ========================================================= -->
+<style id="LUNDUYAN-HOTFIX-2026-09-10">
+/* Profile: green workspace and one reachable action stack */
+#myProfileModal{
+  background:rgba(8,72,32,.62)!important;
+  z-index:2147483000!important;
+}
+#myProfileModal>.modal-card{
+  background:#199A48!important;
+  overflow:hidden!important;
+}
+#myProfileModal .modal-header{
+  background:#199A48!important;
+  color:#fff!important;
+}
+#myProfileModal .modal-header h2,
+#myProfileModal .modal-header p{color:#fff!important;}
+#myProfileContent{
+  background:#eaf8ef!important;
+  color:#173b27!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#myProfileContent>.lunduyan-profile-actions{
+  position:static!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:10px!important;
+  width:100%!important;
+  margin:16px 0 0!important;
+  padding:14px 0 24px!important;
+  background:transparent!important;
+  border-top:1px solid #bcdcc7!important;
+}
+#myProfileContent .lunduyan-profile-actions button{
+  position:static!important;
+  width:100%!important;
+  min-height:54px!important;
+  margin:0!important;
+  flex:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:15px!important;
+  box-sizing:border-box!important;
+  pointer-events:auto!important;
+  z-index:auto!important;
+}
+#myProfileContent .lunduyan-feedback-btn{
+  background:#fff!important;color:#11733a!important;border:2px solid #199A48!important;
+}
+#myProfileContent .lunduyan-profile-manage-btn,
+#myProfileContent .lunduyan-moderator-btn{
+  background:#11733a!important;color:#fff!important;border:1px solid #11733a!important;
+}
+#myProfileContent .lunduyan-logout-btn{
+  background:#111!important;color:#fff!important;border:1px solid #111!important;
+}
+/* Remove accidental duplicate action buttons created by older patches. */
+#myProfileContent .mobile-blocked-management{
+  width:100%!important;margin:10px 0 0!important;padding:0!important;border:0!important;
+}
+#myProfileContent .mobile-blocked-management button{pointer-events:auto!important;}
+/* Aggregation must never be covered by the fixed phone nav. */
+@media(max-width:700px){
+  #myProfileContent{padding:14px 14px 28px!important;}
+  #myProfileContent form{margin-bottom:0!important;}
+  #myProfileModal .lunduyan-language-global{top:74px!important;}
+  #aggregationSection{
+    padding-bottom:150px!important;
+    scroll-margin-bottom:120px!important;
+  }
+  #aggregationGrid{padding-bottom:40px!important;}
+  .aggregation-card{
+    position:relative!important;
+    z-index:1!important;
+    overflow:visible!important;
+  }
+  .aggregation-actions,
+  .aggregation-actions button,
+  .poll-option{
+    position:relative!important;
+    z-index:20!important;
+    pointer-events:auto!important;
+    touch-action:manipulation!important;
+  }
+  .poll-option{min-height:58px!important;}
+  .aggregation-poll{
+    position:relative!important;
+    z-index:5!important;
+    margin-top:16px!important;
+    padding:14px!important;
+    border:2px solid #199A48!important;
+    border-radius:18px!important;
+    background:#f7fff9!important;
+  }
+  .aggregation-action-btn{min-height:52px!important;font-size:15px!important;}
+  .aggregation-contributor{align-items:flex-start!important;}
+}
+</style>
+
+<script id="LUNDUYAN-FINAL-PROFILE-ACTIONS-CLEANUP">
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id);
+  function prof(){return window.currentProfile || (typeof currentProfile!=='undefined'?currentProfile:null);}
+  function role(){return String(prof()?.role||'').toUpperCase();}
+  function maker(){
+    const p=prof(),u=window.currentUser||(typeof currentUser!=='undefined'?currentUser:null);
+    return !!p&&(p.is_maker===true||String(u?.user_metadata?.is_maker||'').toLowerCase()==='true');
+  }
+  function moderate(){return maker()||['MODERATOR','ADMIN','DEVELOPER'].includes(role());}
+  function clean(){
+    if(window.__profileHotfixCleaning)return;
+    window.__profileHotfixCleaning=true;
+    const modal=$('myProfileModal'),box=$('myProfileContent');
+    if(!modal||!box||modal.classList.contains('hidden')||!prof()){window.__profileHotfixCleaning=false;return;}
+
+    /* Remove every legacy generated action wrapper/button from prior patches. */
+    box.querySelectorAll('.lunduyan-profile-actions,.mobile-blocked-management,.lunduyan-moderator-btn').forEach(x=>x.remove());
+    box.querySelectorAll('button').forEach(b=>{
+      const t=String(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+      if(/^(↪\s*)?(logout|mag-logout|log out|mag logout)$/.test(t) || t.includes('feedback / suggestion') || t.includes('feedback / mungkahi') || t.includes('manage blocked accounts') || t.includes('pamahalaan ang mga naka-block')) b.remove();
+    });
+
+    const actions=document.createElement('div');
+    actions.className='lunduyan-profile-actions';
+    const tl=localStorage.getItem('lunduyan-language')==='tl';
+
+    const feedback=document.createElement('button');
+    feedback.type='button'; feedback.className='lunduyan-feedback-btn';
+    feedback.textContent=tl?'💡 Feedback / Mungkahi':'💡 Feedback / Suggestion';
+    feedback.onclick=()=>window.openModerationFeedback?.('FEEDBACK');
+
+    const manage=document.createElement('button');
+    manage.type='button'; manage.className='lunduyan-profile-manage-btn';
+    manage.textContent=tl?'🛡️ Pamahalaan ang mga Naka-block na Account':'🛡️ Manage Blocked Accounts';
+    manage.onclick=()=>window.openBlockedAccounts?.();
+
+    const logout=document.createElement('button');
+    logout.type='button'; logout.className='lunduyan-logout-btn';
+    logout.textContent=tl?'↪ Mag-logout':'↪ Logout';
+    logout.onclick=async e=>{
+      e.preventDefault(); e.stopPropagation();
+      if(window.__lunduyanLoggingOut)return;
+      const ok=confirm(tl?'Sigurado ka bang gusto mong mag-logout?':'Are you sure you want to log out?');
+      if(!ok)return;
+      window.__lunduyanLoggingOut=true;
+      try{
+        if(typeof window.logout==='function') await window.logout();
+        else if(window.supabaseClient?.auth) await window.supabaseClient.auth.signOut();
+      }catch(err){
+        window.__lunduyanLoggingOut=false;
+        alert(err?.message||(tl?'Hindi makapag-logout.':'Unable to log out.'));
+      }
+    };
+
+    actions.append(feedback,manage);
+    if(moderate()){
+      const inbox=document.createElement('button');
+      inbox.type='button'; inbox.className='lunduyan-moderator-btn';
+      inbox.textContent=tl?'🛡️ Buksan ang Moderator Inbox':'🛡️ Open Moderator Inbox';
+      inbox.onclick=()=>window.openModeratorInbox?.();
+      actions.append(inbox);
+    }
+    actions.append(logout);
+    box.appendChild(actions);
+    window.__profileHotfixCleaning=false;
+  }
+  function hook(){
+    if(typeof window.openMyProfile!=='function')return;
+    if(window.openMyProfile.__profileHotfix)return;
+    const base=window.openMyProfile;
+    const wrapped=async function(){
+      const out=await base.apply(this,arguments);
+      setTimeout(clean,0); setTimeout(clean,80); setTimeout(clean,250);
+      return out;
+    };
+    wrapped.__profileHotfix=true;
+    window.openMyProfile=wrapped;
+  }
+  function boot(){hook();clean();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,300));else setTimeout(boot,300);
+  [700,1400,2500].forEach(ms=>setTimeout(boot,ms));
+  new MutationObserver(()=>{
+    clearTimeout(window.__profileHotfixTimer);
+    window.__profileHotfixTimer=setTimeout(()=>{hook();clean();},80);
+  }).observe(document.body,{childList:true,subtree:true});
+  window.__lunduyanCleanProfileActions=clean;
+})();
+</script>
+
+<script id="LUNDUYAN-AGGREGATION-UI-HOTFIX">
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const role=()=>String((window.currentProfile||{}).role||'').toUpperCase();
+  const farmer=()=>role()==='FARMER';
+  const money=v=>typeof window.money==='function'?window.money(v):Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const esc=v=>typeof window.escapeHtml==='function'?window.escapeHtml(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  let busy=false;
+
+  /* Resolve the actual public.users id used by aggregation tables. */
+  async function publicUserId(){
+    const p=window.currentProfile||{};
+    if(p.id)return String(p.id);
+    const uid=window.currentUser?.id;
+    if(!uid)return null;
+    const {data}=await window.supabaseClient.from('users').select('id').eq('auth_user_id',uid).maybeSingle();
+    return data?.id?String(data.id):String(uid);
+  }
+
+  /* Rebuild the aggregation card from current data after any contribution/vote. */
+  async function refresh(){ if(typeof window.loadAggregations==='function') await window.loadAggregations(); }
+
+  window.openAggregationContribution=async function(id){
+    if(!farmer()){alert('Only farmers can contribute harvest.');return;}
+    const rows=window.__aggregations||[];
+    const r=rows.find(x=>String(x.id)===String(id));
+    if(!r){await refresh();return;}
+    const target=Number(r.target_quantity||0), total=Number(r.total_contributed||0), remaining=Math.max(target-total,0);
+    if(String(r.status||'OPEN').toUpperCase()!=='OPEN'){alert('This pool is no longer accepting contributions.');return;}
+    if(remaining<=0){alert('This pool has already reached its target.');return;}
+    const modal=$('aggregationContributionModal');
+    if(!modal)return;
+    $('aggContributionRequestId').value=String(r.id);
+    $('aggContributionQty').value=Math.min(100,remaining);
+    $('aggContributionQty').max=String(remaining);
+    $('aggContributionPrice').value=Number(r.offer_price||0);
+    $('aggContributionInfo').innerHTML=`<div class="aggregation-summary"><strong>${esc(r.product_name)}</strong><br>Target: ${esc(target)} ${esc(r.unit)}<br>Still needed: <strong>${esc(remaining)} ${esc(r.unit)}</strong><br><small>Enter how much harvest you will contribute and your proposed selling price. If the target is reached, contributing farmers will vote on the final community price.</small></div>`;
+    modal.classList.remove('hidden');
+    if(typeof setModalScrollLock==='function')setModalScrollLock(true);
+    setTimeout(()=>{$('aggContributionQty')?.focus();},50);
+  };
+
+  window.voteAggregationPrice=async function(requestId,optionId){
+    if(busy)return;
+    if(!farmer()){alert('Only contributing farmers can vote on the final community price.');return;}
+    if(!optionId||String(optionId).startsWith('pending-')){await refresh();return;}
+    busy=true;
+    try{
+      const {data,error}=await window.supabaseClient.rpc('vote_aggregation_price',{p_request_id:String(requestId),p_option_id:String(optionId)});
+      if(error)throw error;
+      await refresh();
+      if(data?.poll_closed) alert(`Final community price selected: ₱${money(data.winning_price)}.`);
+    }catch(e){alert(e?.message||'Unable to submit your vote.');}
+    finally{busy=false;}
+  };
+
+  /* Rewire contribution form so it remains usable even if an older listener
+     was installed by a previous patch. */
+  function wire(){
+    const f=$('aggregationContributionForm');
+    if(!f || f.dataset.hotfixWired==='1')return;
+    f.dataset.hotfixWired='1';
+    f.addEventListener('submit',async e=>{
+      e.preventDefault();e.stopImmediatePropagation();
+      if(busy||!farmer())return;
+      const requestId=$('aggContributionRequestId')?.value;
+      const quantity=Number($('aggContributionQty')?.value);
+      const price=Number($('aggContributionPrice')?.value);
+      if(!requestId||!Number.isFinite(quantity)||quantity<=0){alert('Enter a valid contribution quantity.');return;}
+      if(!Number.isFinite(price)||price<0){alert('Enter your proposed price per unit.');return;}
+      const r=(window.__aggregations||[]).find(x=>String(x.id)===String(requestId));
+      const remaining=Number(r?.target_quantity||0)-Number(r?.total_contributed||0);
+      if(remaining<=0){alert('This pool has already reached its target.');return;}
+      if(quantity>remaining){alert(`You can contribute up to ${money(remaining)} ${r?.unit||'KG'} for this pool.`);return;}
+      busy=true;
+      try{
+        const {data,error}=await window.supabaseClient.rpc('contribute_to_aggregation',{
+          p_request_id:String(requestId),p_quantity:quantity,p_proposed_price:price
+        });
+        if(error)throw error;
+        if(typeof window.closeAggregationContribution==='function')window.closeAggregationContribution();
+        await refresh();
+        alert(data?.target_reached
+          ? 'Contribution saved. The target is reached — contributing farmers can now vote on the final community price.'
+          : 'Contribution saved with your proposed price.');
+      }catch(err){alert(err?.message||'Unable to save contribution.');}
+      finally{busy=false;}
+    },true);
+  }
+
+  function makePollButtonsClickable(){
+    document.querySelectorAll('#aggregationGrid .poll-option').forEach(b=>{
+      b.style.setProperty('pointer-events','auto','important');
+      b.style.setProperty('touch-action','manipulation','important');
+    });
+  }
+
+  function boot(){wire();makePollButtonsClickable();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,500));else setTimeout(boot,500);
+  setInterval(()=>{wire();makePollButtonsClickable();},1500);
+})();
+</script>
+
+<script id="LUNDUYAN-AGGREGATION-TRANSLATION-LIVE">
+(function(){
+  'use strict';
+  const mapTL={
+    'Loading farmer community pools...':'Naglo-load ng mga community pool ng farmer...',
+    'No farmer community pools yet. Farmers can create the first pool.':'Wala pang community pool ng farmer. Maaaring gumawa ng unang pool ang mga farmer.',
+    'Farmers contribute harvest and propose a price, then vote together on one final community price.':'Nag-aambag ang mga farmer ng ani at nagmumungkahi ng presyo, pagkatapos ay sama-samang bumoboto para sa isang panghuling presyo.',
+    'Buyers wait for a completed farmer pool, then place and approve the full pooled order.':'Naghihintay ang mga buyer sa kumpletong farmer pool, pagkatapos ay naglalagay at nag-aapruba ng buong order.',
+    'No farmer contributions yet.':'Wala pang ambag ng mga farmer.',
+    'Price voting opens after the pool target is reached.':'Magbubukas ang pagboto sa presyo kapag naabot ang target ng pool.',
+    'Waiting for the farmers’ proposed prices.':'Naghihintay sa mga iminungkahing presyo ng mga farmer.',
+    'FARMER PRICE VOTING':'PAGBOTO NG PRESYO NG MGA FARMER',
+    'TAP ONE PRICE TO VOTE. TAP ANOTHER PRICE TO CHANGE YOUR VOTE.':'I-TAP ANG ISANG PRESYO PARA BUMOTO. I-TAP ANG IBANG PRESYO PARA PALITAN ANG BOTO.',
+    'Only farmers who contributed to this pool can vote.':'Mga farmer lang na nag-ambag sa pool na ito ang maaaring bumoto.',
+    'Contributing farmers vote on the final community price.':'Ang mga farmer na nag-ambag ang boboto sa panghuling presyo ng komunidad.',
+    'Final price selected':'Napili na ang panghuling presyo',
+    'One vote per contributing farmer':'Isang boto bawat farmer na nag-ambag',
+    'farmer contributing':'farmer na nag-aambag',
+    'farmers contributing':'mga farmer na nag-aambag',
+    'remaining':'natitira',
+    'complete':'kumpleto',
+    'Created by:':'Ginawa ni:',
+    'Location not set':'Walang nakatakdang lokasyon',
+    'Report pool creator':'I-report ang gumawa ng pool',
+    'Target reached':'Naabot ang target',
+    'TARGET REACHED':'NAABOT ANG TARGET',
+    'OPEN':'BUKAS','CLOSED':'SARADO','SOLD':'NABENTA',
+    'Place Full Pool Order':'Mag-order ng Buong Pool',
+    'Create Farmer Pool':'Gumawa ng Farmer Pool',
+    'Contribute Harvest':'Mag-ambag ng Ani',
+    'Price voting in progress':'Kasalukuyang bumoboto sa presyo'
+  };
+  window.__LUNDUYAN_AGG_TL__=mapTL;
+})();
+</script>
