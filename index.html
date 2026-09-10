@@ -13108,5 +13108,250 @@ body.auth-view .lunduyan-language-global{top:18px;right:18px}
 
 
 
+
+<!-- =========================================================
+ LUNDUYAN FINAL PROFILE VISIBILITY + FULLER TRANSLATION PATCH
+ ========================================================= -->
+<style id="LUNDUYAN-FINAL-PROFILE-GREEN-VISIBILITY">
+  /* Profile is a green workspace on both phone and desktop. */
+  #myProfileModal{background:rgba(10,65,31,.58)!important;z-index:2147480000!important;}
+  #myProfileModal>.modal-card{
+    background:#199A48!important;
+    border:0!important;
+    box-shadow:0 24px 70px rgba(0,0,0,.28)!important;
+    overflow:hidden!important;
+  }
+  #myProfileModal .modal-header{
+    background:#199A48!important;
+    color:#fff!important;
+    border-bottom:1px solid rgba(255,255,255,.22)!important;
+    flex:0 0 auto!important;
+    padding:16px 18px!important;
+  }
+  #myProfileModal .modal-header h2{color:#fff!important;margin:0!important;}
+  #myProfileModal #myProfileContent{
+    background:#eaf8ef!important;
+    color:#183b27!important;
+    border-radius:0!important;
+    min-height:0!important;
+    flex:1 1 auto!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:18px!important;
+    padding-bottom:110px!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  #myProfileModal #myProfileContent form{
+    background:#fff!important;
+    border:1px solid #cde8d5!important;
+    border-radius:18px!important;
+    padding:16px!important;
+    box-shadow:0 8px 25px rgba(16,92,44,.08)!important;
+  }
+  #myProfileModal #myProfileContent label{color:#174e2d!important;font-weight:900!important;}
+  #myProfileModal #myProfileContent input,
+  #myProfileModal #myProfileContent textarea,
+  #myProfileModal #myProfileContent select{
+    background:#fff!important;color:#17251c!important;border:1.5px solid #c9dfd0!important;
+    width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+  }
+  #myProfileModal #myProfileContent input:focus,
+  #myProfileModal #myProfileContent textarea:focus,
+  #myProfileModal #myProfileContent select:focus{
+    border-color:#199A48!important;box-shadow:0 0 0 3px rgba(25,154,72,.13)!important;outline:none!important;
+  }
+  #myProfileModal #myProfileContent form>.primary-btn{
+    width:100%!important;min-height:52px!important;margin-top:14px!important;
+    background:#199A48!important;color:#fff!important;border:0!important;border-radius:14px!important;
+    font-weight:900!important;
+  }
+  .lunduyan-profile-actions{
+    display:flex!important;flex-direction:column!important;gap:10px!important;
+    width:100%!important;margin-top:14px!important;padding-top:14px!important;
+    border-top:1px solid #c6e2ce!important;
+  }
+  .lunduyan-profile-actions button,
+  .mobile-blocked-management button,
+  #myProfileModal .lunduyan-moderator-btn{
+    width:100%!important;min-height:54px!important;display:flex!important;
+    align-items:center!important;justify-content:center!important;text-align:center!important;
+    white-space:normal!important;line-height:1.25!important;padding:12px 14px!important;
+    border-radius:14px!important;font-size:15px!important;font-weight:900!important;
+    box-sizing:border-box!important;position:relative!important;z-index:3!important;
+  }
+  #myProfileModal .lunduyan-feedback-btn{
+    background:#fff!important;color:#11733A!important;border:2px solid #199A48!important;
+  }
+  #myProfileModal .lunduyan-moderator-btn,
+  #myProfileModal .mobile-blocked-management button{
+    background:#11733A!important;color:#fff!important;border:1px solid #11733A!important;
+  }
+  #myProfileModal .lunduyan-logout-btn{
+    background:#111!important;color:#fff!important;border:1px solid #111!important;
+    margin-top:0!important;
+  }
+  #myProfileModal .mobile-blocked-management{
+    width:100%!important;margin-top:10px!important;padding:0!important;border:0!important;
+  }
+  #myProfileModal .profile-edit-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}
+  #myProfileModal .profile-edit-grid .full{grid-column:1/-1!important;}
+  @media(max-width:700px){
+    #myProfileModal{padding:0!important;align-items:stretch!important;}
+    #myProfileModal>.modal-card{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;}
+    #myProfileModal #myProfileContent{padding:14px!important;padding-bottom:120px!important;}
+    #myProfileModal .profile-edit-grid{grid-template-columns:1fr!important;gap:10px!important;}
+    #myProfileModal .profile-edit-grid .full{grid-column:auto!important;}
+    #myProfileModal #myProfileContent form{padding:14px!important;border-radius:16px!important;}
+  }
+</style>
+<script id="LUNDUYAN-FINAL-PROFILE-ACTIONS-GUARD">
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id);
+  function getProfile(){return window.currentProfile || (typeof currentProfile!=='undefined'?currentProfile:null);}
+  function isMaker(){const p=getProfile(),u=window.currentUser||(typeof currentUser!=='undefined'?currentUser:null);return !!p&&(p.is_maker===true||String(u?.user_metadata?.is_maker||'').toLowerCase()==='true');}
+  function role(){return String(getProfile()?.role||'').toUpperCase();}
+  function canModerate(){return isMaker()||['MODERATOR','ADMIN','DEVELOPER'].includes(role());}
+  function ensureActions(){
+    const modal=$('myProfileModal'),box=$('myProfileContent'); if(!modal||!box||modal.classList.contains('hidden'))return;
+    let actions=box.querySelector('.lunduyan-profile-actions');
+    if(!actions){actions=document.createElement('div');actions.className='lunduyan-profile-actions';box.appendChild(actions);}
+
+    let feedback=actions.querySelector('.lunduyan-feedback-btn');
+    if(!feedback){feedback=document.createElement('button');feedback.type='button';feedback.className='lunduyan-feedback-btn';actions.appendChild(feedback);}
+    feedback.textContent='💡 Feedback / Suggestion';
+    feedback.onclick=()=>window.openModerationFeedback&&window.openModerationFeedback('FEEDBACK');
+
+    let manage=box.querySelector('.mobile-blocked-management');
+    if(!manage){
+      manage=document.createElement('div');manage.className='mobile-blocked-management';
+      box.appendChild(manage);
+    }
+    let mb=manage.querySelector('button');
+    if(!mb){mb=document.createElement('button');mb.type='button';manage.appendChild(mb);}
+    mb.textContent='🛡️ Manage Blocked Accounts';
+    mb.onclick=()=>window.openBlockedAccounts&&window.openBlockedAccounts();
+
+    if(canModerate()){
+      let mod=box.querySelector('.lunduyan-moderator-btn');
+      if(!mod){mod=document.createElement('button');mod.type='button';mod.className='lunduyan-moderator-btn primary-btn';box.appendChild(mod);}
+      mod.textContent='🛡️ Open Moderator Inbox';
+      mod.onclick=()=>window.openModeratorInbox&&window.openModeratorInbox();
+    }else{
+      box.querySelectorAll('.lunduyan-moderator-btn').forEach(x=>x.remove());
+    }
+
+    let logout=actions.querySelector('.lunduyan-logout-btn');
+    if(!logout){logout=box.querySelector('.lunduyan-logout-btn');}
+    if(!logout){logout=document.createElement('button');logout.type='button';logout.className='lunduyan-logout-btn';actions.appendChild(logout);}
+    logout.textContent='↪ Logout';
+    logout.onclick=async e=>{
+      e.preventDefault();e.stopPropagation();
+      if(window.__lunduyanLoggingOut)return;
+      if(!confirm('Are you sure you want to log out?'))return;
+      window.__lunduyanLoggingOut=true;
+      try{if(typeof window.logout==='function')await window.logout();else if(window.supabaseClient?.auth)await window.supabaseClient.auth.signOut();}
+      catch(err){console.error(err);alert(err?.message||'Unable to log out.');window.__lunduyanLoggingOut=false;}
+    };
+    if(logout.parentElement!==actions)actions.appendChild(logout);
+
+    // Keep only the one visible feedback/manage/logout action set inside My Profile.
+    box.querySelectorAll('.lunduyan-profile-actions').forEach((x,i)=>{if(i>0)x.remove();});
+    box.querySelectorAll('.mobile-blocked-management').forEach((x,i)=>{if(i>0)x.remove();});
+  }
+
+  // Wrap whichever openMyProfile implementation is currently installed.
+  function wrap(){
+    if(typeof window.openMyProfile!=='function' || window.openMyProfile.__finalProfileGuard)return;
+    const base=window.openMyProfile;
+    async function wrapped(){
+      await base.apply(this,arguments);
+      ensureActions();
+      requestAnimationFrame(ensureActions);
+      setTimeout(ensureActions,80);
+      setTimeout(ensureActions,300);
+    }
+    wrapped.__finalProfileGuard=true;
+    window.openMyProfile=wrapped;
+  }
+  wrap();
+  [300,700,1200,2000].forEach(ms=>setTimeout(()=>{wrap();ensureActions();},ms));
+  new MutationObserver(()=>{clearTimeout(window.__lunduyanProfileActionTimer);window.__lunduyanProfileActionTimer=setTimeout(()=>{wrap();ensureActions();},60);}).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<!-- Broader Tagalog coverage for static + dynamically-created UI text. -->
+<script id="LUNDUYAN-FULL-TAGALOG-COVERAGE">
+(function(){
+  const extra={
+    'Full Name':'Buong Pangalan','Location':'Lokasyon','Contact Number':'Numero ng Contact','Bio / About':'Bio / Tungkol sa Akin',
+    'City / Province':'Lungsod / Probinsya','Save Profile Changes':'I-save ang mga Pagbabago sa Profile','Name is required.':'Kailangan ang pangalan.',
+    'Profile updated successfully.':'Matagumpay na na-update ang profile.','Are you sure you want to log out?':'Sigurado ka bang gusto mong mag-logout?',
+    'Unable to log out.':'Hindi makapag-logout.','Feedback / Suggestion':'Feedback / Mungkahi','Manage Blocked Accounts':'Pamahalaan ang mga Naka-block na Account',
+    'Open Moderator Inbox':'Buksan ang Moderator Inbox','Logout':'Mag-logout','Loading blocked accounts...':'Naglo-load ng mga naka-block na account...',
+    'Manage accounts you have blocked.':'Pamahalaan ang mga account na iyong na-block.','No blocked accounts':'Walang naka-block na account',
+    'Accounts you block will appear here.':'Lalabas dito ang mga account na iyong bina-block.','Unblock':'I-unblock','Farmer Profile':'Profile ng Farmer',
+    'Buyer Profile':'Profile ng Buyer','Full Name':'Buong Pangalan','Description':'Paglalarawan','Price':'Presyo','Quantity':'Dami','Unit':'Yunit',
+    'Available quantity':'Available na dami','Price per unit':'Presyo bawat yunit','Municipality / Province':'Munisipalidad / Probinsya',
+    'Publish Product':'I-publish ang Produkto','Product Name':'Pangalan ng Produkto','Product Image':'Larawan ng Produkto',
+    'Add Product':'Magdagdag ng Produkto','Edit Profile':'I-edit ang Profile','Save':'I-save','Save Changes':'I-save ang mga Pagbabago',
+    'Cancel':'Kanselahin','Close':'Isara','Send':'Ipadala','Submit':'Isumite','Delete':'Tanggalin','Edit':'I-edit','Search':'Maghanap',
+    'Search products':'Maghanap ng mga produkto','Refresh':'I-refresh','Clear':'I-clear','Loading...':'Naglo-load...',
+    'No products found.':'Walang nahanap na produkto.','No messages yet.':'Wala pang mga mensahe.','Notifications':'Mga Abiso','Alerts':'Mga Abiso',
+    'Messages':'Mga Mensahe','Chat':'Chat','Home':'Home','Profile':'Profile','Marketplace':'Pamilihan','My Products':'Aking mga Produkto',
+    'My Orders':'Aking mga Order','Orders':'Mga Order','Transactions':'Mga Transaksyon','Products':'Mga Produkto','Settings':'Mga Setting',
+    'Community Aggregations':'Community Aggregation','Community Pool':'Community Pool','Create Community Pool':'Gumawa ng Community Pool',
+    'Contribute to Aggregation':'Mag-ambag sa Aggregation','Join Aggregation':'Sumali sa Aggregation','Target Quantity':'Target na Dami',
+    'Proposed Price':'Iminungkahing Presyo','Offer Price':'Inaalok na Presyo','Additional Details':'Karagdagang Detalye',
+    'How it works:':'Paano ito gumagana:','Price Voting':'Pagboto sa Presyo','Farmer Price Voting':'Pagboto ng Presyo ng mga Farmer',
+    'Vote':'Bumoto','Purchase':'Bumili','Buy Now':'Bumili Ngayon','Place Order':'Ilagay ang Order','Buyer Note':'Tala ng Buyer',
+    'Rate your purchase':'I-rate ang iyong binili','Reviews':'Mga Review','Rating':'Rating','Status':'Status','Available':'Available',
+    'Pending':'Naghihintay','Completed':'Nakumpleto','Closed':'Sarado','Open':'Bukas','Back':'Bumalik','Next':'Susunod',
+    'Help & Safety':'Tulong at Kaligtasan','General Feedback':'Pangkalahatang Feedback','Report an Account':'I-report ang Account',
+    'Account to report':'Account na ire-report','Reason':'Dahilan','Details':'Detalye','Subject':'Paksa','Message':'Mensahe',
+    'Send to Moderators':'Ipadala sa mga Moderator','Submit Report':'Isumite ang Report','Sending...':'Ipinapadala...',
+    'Moderator Inbox':'Inbox ng Moderator','User feedback and safety reports':'Feedback ng user at safety reports',
+    'Loading moderation messages...':'Naglo-load ng moderation messages...','No moderation messages yet.':'Wala pang moderation messages.',
+    'Mark in review':'Markahan bilang nire-review','Resolve':'Lutasin','Report':'I-report','Feedback':'Feedback','Suggestion':'Mungkahi',
+    'Welcome to LUNDUYAN':'Maligayang pagdating sa LUNDUYAN','Choose your role':'Piliin ang iyong role','Farmer':'Farmer','Buyer':'Buyer',
+    'Get Started':'Magsimula','Login':'Mag-login','Sign in':'Mag-login','Sign Up':'Mag-sign up','Register':'Magparehistro',
+    'Email or Phone Number':'Email o Numero ng Telepono','Phone Number':'Numero ng Telepono','Password':'Password','Email':'Email',
+    'Tell people about yourself...':'Sabihin sa mga tao ang tungkol sa iyo...','Fresh Tomatoes':'Sariwang Kamatis','Fresh Greens':'Sariwang Gulay',
+    'Sweet Corn':'Matamis na Mais','Local harvest':'Lokal na ani','Direct from a local farmer':'Direkta mula sa lokal na farmer',
+    'Available now':'Available ngayon','Need help?':'Kailangan ng tulong?','Ask LUNDUYAN AI':'Magtanong sa LUNDUYAN AI',
+    'Your LUNDUYAN helper':'Iyong LUNDUYAN helper','How do I buy?':'Paano ako bibili?','How do I sell?':'Paano ako magbebenta?',
+    'How do I sell a product?':'Paano ako magbebenta ng produkto?','How do I manage orders?':'Paano ko pamamahalaan ang mga order?',
+    'How do I edit my profile?':'Paano ko ie-edit ang profile ko?','How do I block a buyer?':'Paano ko iba-block ang isang buyer?',
+    'How do I buy a product?':'Paano ako bibili ng produkto?','How do I message a farmer?':'Paano ako magme-message sa farmer?',
+    'How do I track my order?':'Paano ko susubaybayan ang order ko?','How do I block a farmer?':'Paano ko iba-block ang isang farmer?'
+  };
+  window.__LUNDUYAN_EXTRA_TL__=extra;
+  function merge(){
+    try{
+      // The original translator keeps its dictionary private, so patch matching DOM text directly
+      // for phrases that are not in the original dictionary. Store originals per node.
+      const nodes=document.querySelectorAll('body *');
+      nodes.forEach(el=>{
+        if(el.closest('.lunduyan-language-switch,.bot-messages,.bot-window .bot-input'))return;
+        [...el.childNodes].forEach(n=>{
+          if(n.nodeType!==3)return;
+          const raw=(n.nodeValue||'');const key=raw.trim();if(!key||!extra[key])return;
+          if(!n.__lunduyanExtraOriginal)n.__lunduyanExtraOriginal=raw;
+          const lang=localStorage.getItem('lunduyan-language')||'en';
+          n.nodeValue=lang==='tl'?raw.replace(key,extra[key]):n.__lunduyanExtraOriginal;
+        });
+        ['placeholder','title','aria-label'].forEach(a=>{
+          if(!el.hasAttribute(a))return; const key=el.getAttribute(a).trim();
+          if(!extra[key])return; if(!el.dataset.extraOriginal)el.dataset.extraOriginal=el.getAttribute(a);
+          el.setAttribute(a,(localStorage.getItem('lunduyan-language')||'en')==='tl'?extra[key]:el.dataset.extraOriginal);
+        });
+      });
+    }catch(e){console.warn('Tagalog coverage:',e)}
+  }
+  setInterval(merge,700);
+  merge();
+})();
+</script>
+
 </body>
 </html>
