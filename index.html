@@ -12352,3 +12352,155 @@ window.__setLunduAIbusy=function(v){
 
 </body>
 </html>
+
+<!-- LUNDUYAN FINAL PHONE SCREEN / NAV STACK FIX -->
+<style id="LUNDUYAN_FINAL_PHONE_SCREEN_FIX">
+@media (max-width:700px){
+  html,body{overflow-x:hidden!important;max-width:100%!important}
+  body{padding-bottom:78px!important}
+  #mobileBottomNav,
+  nav#mobileBottomNav{
+    position:fixed!important;left:0!important;right:0!important;bottom:0!important;
+    display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    min-height:70px!important;height:auto!important;
+    background:#fff!important;color:#68756e!important;
+    border-top:1px solid #e4ebe6!important;
+    box-shadow:0 -6px 18px rgba(19,53,34,.08)!important;
+    z-index:2147483000!important;
+  }
+  #mobileBottomNav .mobile-nav-item,
+  #mobileBottomNav button.mobile-nav-item{
+    appearance:none!important;-webkit-appearance:none!important;
+    background:transparent!important;color:#68756e!important;
+    border:0!important;outline:0!important;box-shadow:none!important;
+    border-radius:12px!important;
+    min-height:58px!important;
+    font:inherit!important;
+  }
+  #mobileBottomNav .mobile-nav-item.active{
+    background:#eef8f1!important;color:#199A48!important;
+  }
+  #mobileBottomNav .mobile-nav-item:focus,
+  #mobileBottomNav .mobile-nav-item:active{
+    background:#eef8f1!important;color:#199A48!important;
+    outline:none!important;box-shadow:none!important;
+  }
+  /* Never let an old screen/panel sit on top of the newly selected screen. */
+  #mobileBottomNav + #mobileBottomNav{display:none!important}
+}
+@media (min-width:701px){
+  #mobileBottomNav,nav#mobileBottomNav{display:none!important;visibility:hidden!important;pointer-events:none!important}
+}
+</style>
+<script id="LUNDUYAN_FINAL_PHONE_SCREEN_FIX_JS">
+(function(){
+  'use strict';
+  if(window.__LUNDUYAN_FINAL_PHONE_SCREEN_FIX__)return;
+  window.__LUNDUYAN_FINAL_PHONE_SCREEN_FIX__=true;
+
+  const $=id=>document.getElementById(id);
+  const phone=()=>window.innerWidth<=700;
+
+  function dedupeNav(){
+    const navs=[...document.querySelectorAll('#mobileBottomNav')];
+    if(navs.length>1){
+      navs.slice(1).forEach(n=>n.remove());
+    }
+    const nav=$('mobileBottomNav');
+    if(nav&&!phone()){
+      nav.style.setProperty('display','none','important');
+      nav.style.setProperty('visibility','hidden','important');
+      nav.style.pointerEvents='none';
+    }
+    return nav;
+  }
+
+  function closeOtherScreens(keep){
+    /* Close transient modals/panels before opening the next screen. */
+    const ids=[
+      'profileModal','myProfileModal','chatModal','notificationPanel',
+      'blockedAccountsModal','moderationFeedbackModal','moderatorInboxModal',
+      'botWindow','messagesModal','userProfileModal','aggregationRequestModal'
+    ];
+    ids.forEach(id=>{
+      if(id===keep)return;
+      const el=$(id);
+      if(el)el.classList.add('hidden');
+    });
+    document.querySelectorAll('.modal:not(.hidden)').forEach(el=>{
+      if(el.id!==keep && el.id!=='mobileBottomNav')el.classList.add('hidden');
+    });
+    document.body.classList.remove('modal-open','modal-is-open');
+    document.documentElement.classList.remove('modal-is-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('height');
+    document.body.style.removeProperty('touch-action');
+  }
+
+  async function navigate(action,nav,button){
+    if(!phone())return;
+    if(nav){
+      nav.querySelectorAll('.mobile-nav-item').forEach(x=>x.classList.remove('active'));
+      if(button)button.classList.add('active');
+    }
+
+    if(action==='home'){
+      closeOtherScreens(null);
+      window.scrollTo({top:0,behavior:'smooth'});
+      return;
+    }
+    if(action==='market'){
+      closeOtherScreens(null);
+      const target=$('products');
+      if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+      if(typeof loadProducts==='function')Promise.resolve().then(()=>loadProducts()).catch(()=>{});
+      return;
+    }
+    if(action==='chat'){
+      closeOtherScreens('chatModal');
+      if(typeof window.openChat==='function')await window.openChat();
+      else $('chatModal')?.classList.remove('hidden');
+      return;
+    }
+    if(action==='notifications'){
+      closeOtherScreens('notificationPanel');
+      if(typeof window.toggleNotifications==='function')window.toggleNotifications();
+      else $('notificationPanel')?.classList.remove('hidden');
+      return;
+    }
+    if(action==='profile'){
+      closeOtherScreens('myProfileModal');
+      if(typeof window.openMyProfile==='function')await window.openMyProfile();
+      return;
+    }
+  }
+
+  function bindNav(){
+    const nav=dedupeNav();
+    if(!nav)return;
+    if(nav.dataset.phoneScreenFixBound==='1')return;
+    nav.dataset.phoneScreenFixBound='1';
+    nav.addEventListener('click',function(e){
+      if(!phone())return;
+      const button=e.target.closest('[data-mobile-nav]');
+      if(!button||!nav.contains(button))return;
+      /* Stop all older duplicate navigation handlers. Only this handler changes screens. */
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+      navigate(button.dataset.mobileNav,nav,button);
+    },true);
+  }
+
+  function run(){
+    dedupeNav();
+    bindNav();
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});
+  else run();
+  [100,300,600,1000,1800,3000].forEach(ms=>setTimeout(run,ms));
+  setInterval(run,1500);
+  window.addEventListener('resize',run,{passive:true});
+})();
+</script>
