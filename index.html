@@ -10449,19 +10449,26 @@ setTimeout(run,700);
     const selectFields=`*, creator:creator_id(full_name), aggregation_contributions(id,farmer_id,quantity,status,proposed_price,farmer:farmer_id(full_name)), aggregation_price_polls(id,status,winning_price,aggregation_price_options(id,price,aggregation_price_votes(count)))`;
     let {data,error}=await supabaseClient.from('aggregation_requests').select(selectFields).order('created_at',{ascending:false});
     if(error){grid.innerHTML=`<div class="aggregation-empty"><strong>Community pools could not be loaded.</strong><br><small>${esc(error.message)}</small></div>`;return;}
-    /* Make sure every TARGET_REACHED pool has price choices before showing the voting UI. */
+    /* Full pools must have voting choices. Load them via a security-definer RPC so RLS cannot hide them. */
     try{
-      const needsRefresh=(data||[]).filter(r=>String(r.status||'').toUpperCase()==='TARGET_REACHED').map(r=>r.id).filter(Boolean);
-      if(needsRefresh.length){
-        const results=await Promise.all(needsRefresh.map(async id=>{
-          const r=await supabaseClient.rpc('ensure_aggregation_price_options',{p_request_id:id});
-          if(r.error) console.warn('ensure_aggregation_price_options:',r.error);
-          return r;
-        }));
+      const fullIds=(data||[]).filter(r=>String(r.status||'').toUpperCase()==='TARGET_REACHED').map(r=>r.id).filter(Boolean);
+      for(const id of fullIds){
+        const ensured=await supabaseClient.rpc('ensure_aggregation_price_options',{p_request_id:id});
+        if(ensured.error) console.warn('ensure_aggregation_price_options:',ensured.error.message);
+      }
+      if(fullIds.length){
         const refreshed=await supabaseClient.from('aggregation_requests').select(selectFields).order('created_at',{ascending:false});
         if(!refreshed.error)data=refreshed.data||data;
+        for(const id of fullIds){
+          const pollData=await supabaseClient.rpc('get_aggregation_price_poll',{p_request_id:id});
+          if(!pollData.error && pollData.data){
+            const pd=typeof pollData.data==='string'?JSON.parse(pollData.data):pollData.data;
+            const row=(data||[]).find(x=>String(x.id)===String(id));
+            if(row) row.aggregation_price_polls=[{id:pd.poll_id,status:pd.status,winning_price:pd.winning_price,aggregation_price_options:pd.options||[]}];
+          } else if(pollData.error) console.warn('get_aggregation_price_poll:',pollData.error.message);
+        }
       }
-    }catch(e){console.warn('Aggregation price options refresh:',e);}
+    }catch(e){console.warn('Aggregation price poll setup:',e);}
     const rows=(data||[]).map(r=>{
       const contributions=(r.aggregation_contributions||[]).filter(c=>String(c.status||'ACTIVE').toUpperCase()!=='CANCELLED');
       const total=contributions.reduce((sum,c)=>sum+Number(c.quantity||0),0);
@@ -10486,7 +10493,7 @@ setTimeout(run,700);
     if(status!=='TARGET_REACHED' && status!=='SOLD') return '<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
     const poll=r.poll;
     const options=r.price_options||[];
-    if(!poll||!options.length) return '<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>Price choices are being generated. Please refresh once.</small></div></div></div>';
+    if(!poll||!options.length) return '<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>Voting choices are unavailable. Please make sure the voting SQL fix is installed.</small></div></div></div>';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
