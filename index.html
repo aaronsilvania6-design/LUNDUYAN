@@ -13256,5 +13256,113 @@ window.__setLunduAIbusy=function(v){
 })();
 </script>
 
+
+<style id="authFinalVisualFix">
+/* Final auth UX: always-visible Back button; signup requires both email and phone. */
+#authScreen{position:relative!important}
+#authScreen .lunduyan-real-auth-back{
+  position:absolute!important;left:18px!important;top:18px!important;z-index:99999!important;
+  display:inline-flex!important;align-items:center!important;gap:6px!important;
+  border:1px solid #d7dee5!important;border-radius:10px!important;background:#fff!important;
+  color:#344054!important;padding:9px 13px!important;font-weight:700!important;
+  cursor:pointer!important;box-shadow:0 2px 8px rgba(0,0,0,.06)!important;
+}
+#authScreen .auth-method-toggle{display:none!important}
+#authScreen #signupEmailWrap,#authScreen #signupPhoneWrap{
+  display:block!important;
+}
+#authScreen #signupPhoneWrap.hidden,#authScreen #signupEmailWrap.hidden{
+  display:block!important;
+}
+#authScreen #signupEmail,#authScreen #signupPhone{
+  display:block!important;
+}
+#authScreen .signup-role-cards{display:flex!important}
+@media(max-width:600px){
+  #authScreen .lunduyan-real-auth-back{left:10px!important;top:10px!important}
+}
+</style>
+<script id="authFinalBehaviorFix">
+(function(){
+  function $(id){return document.getElementById(id);}
+  function goBack(){
+    const landing=$('landingScreen'), auth=$('authScreen');
+    if(auth) auth.classList.add('hidden');
+    if(landing) landing.classList.remove('hidden');
+    document.body.classList.remove('auth-view');
+    window.scrollTo(0,0);
+    // Restore landing state if the original app provides a hook.
+    try{
+      if(typeof showLanding==='function') showLanding();
+      else if(typeof resetLanding==='function') resetLanding();
+    }catch(e){}
+  }
+  window.lunduyanRealAuthBack=goBack;
+
+  function ensureBack(){
+    const auth=$('authScreen');
+    if(!auth) return;
+    let b=auth.querySelector('.lunduyan-real-auth-back');
+    if(!b){
+      b=document.createElement('button');
+      b.type='button';
+      b.className='lunduyan-real-auth-back';
+      b.innerHTML='← Back';
+      b.onclick=goBack;
+      auth.prepend(b);
+    }
+  }
+
+  function forceSignupBoth(){
+    const ew=$('signupEmailWrap'), pw=$('signupPhoneWrap');
+    const ei=$('signupEmail'), pi=$('signupPhone');
+    if(ew) ew.classList.remove('hidden');
+    if(pw) pw.classList.remove('hidden');
+    if(ei) ei.required=true;
+    if(pi) pi.required=true;
+    const toggle=document.querySelector('#signupForm .auth-method-toggle');
+    if(toggle) toggle.style.display='none';
+    const note=document.querySelector('#signupForm .auth-role-note');
+    if(note && /either your email/i.test(note.textContent||'')){
+      note.textContent='Enter both your email address and phone number.';
+    }
+  }
+
+  // Keep login as one identifier: email OR phone.
+  function forceLoginIdentifier(){
+    const i=$('loginEmail');
+    if(i){
+      i.type='text';
+      i.inputMode='email';
+      i.placeholder='Email or phone number';
+      i.setAttribute('autocomplete','username');
+    }
+  }
+
+  // Replace showSignup/showLogin only after the original functions exist.
+  const oldShowSignup=window.showSignup;
+  window.showSignup=function(){
+    if(typeof oldShowSignup==='function') oldShowSignup();
+    forceSignupBoth(); forceLoginIdentifier(); ensureBack();
+  };
+  const oldShowLogin=window.showLogin;
+  window.showLogin=function(){
+    if(typeof oldShowLogin==='function') oldShowLogin();
+    forceLoginIdentifier(); ensureBack();
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    ensureBack(); forceSignupBoth(); forceLoginIdentifier();
+    setTimeout(ensureBack,100);
+    setTimeout(forceSignupBoth,100);
+  });
+  setInterval(function(){
+    if($('authScreen') && !$('authScreen').classList.contains('hidden')){
+      ensureBack(); forceSignupBoth(); forceLoginIdentifier();
+    }
+  },500);
+})();
+</script>
+
 </body>
 </html>
