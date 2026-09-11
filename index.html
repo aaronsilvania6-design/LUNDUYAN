@@ -11004,32 +11004,7 @@ setTimeout(run,700);
     const typingId=typing();setStatus('Thinking…');
     try{
       if(!window.supabaseClient?.functions?.invoke)throw new Error('LUNDUYAN AI connection is not ready. Please make sure Supabase is configured.');
-      // Price questions use LUNDUYAN's own ACTIVE marketplace listings first.
-      // This keeps the AI grounded in prices actually posted in the app before it
-      // gives any estimate, and asks the AI service to return useful information links.
-      let priceContext='';
-      const priceQuestion=/\b(price|presyo|magkano|magkano ang|presyuhan|presyo ng|market price|selling price|buying price|per kilo|\u20b1)\b/i.test(text);
-      if(priceQuestion && window.supabaseClient){
-        try{
-          const words=text.toLowerCase().replace(/[^a-z0-9\u00c0-\u024f\u20b1 ]/gi,' ').split(/\s+/).filter(w=>w.length>=3 && !['price','presyo','magkano','ang','ano','ng','sa','per','kilo','kg','the','what','is','are','how','much','market','selling','buying'].includes(w));
-          let q=window.supabaseClient.from('products').select('id,name,price,unit,quantity,location,category,status,created_at').eq('status','ACTIVE').gt('quantity',0).order('created_at',{ascending:false}).limit(60);
-          const {data:posted,error:postedError}=await q;
-          if(!postedError && Array.isArray(posted)){
-            const relevant=words.length ? posted.filter(p=>{const hay=(String(p.name||'')+' '+String(p.category||'')).toLowerCase();return words.some(w=>hay.includes(w));}) : posted;
-            const rows=(relevant.length?relevant:posted).slice(0,15).map(p=>({
-              product:String(p.name||'Unknown product'),price:Number(p.price||0),unit:String(p.unit||'unit'),quantity:Number(p.quantity||0),location:String(p.location||'Not specified'),category:String(p.category||'')
-            }));
-            if(rows.length){
-              const avg=rows.reduce((a,r)=>a+r.price,0)/rows.length;
-              priceContext='\n\nLUNDUYAN POSTED-PRICE CONTEXT (PRIORITY SOURCE):\n'+JSON.stringify(rows)+'\nAverage of the matched posted prices: '+avg.toFixed(2)+'\nRULE: If the user is asking for a price, base the initial answer on these ACTIVE LUNDUYAN marketplace postings. Do not present an unsupported exact price as fact. Explain that posted prices are indicative and may vary by location/quality/quantity. If there are no relevant postings, say so clearly instead of inventing a LUNDUYAN price. After answering, provide useful information/source links when available.';
-            } else {
-              priceContext='\n\nPRICE CONTEXT: No active LUNDUYAN marketplace postings were found for this price question. Do not invent a LUNDUYAN posted price. State that there are no matching posted prices and then use credible external information only if available, with links.';
-            }
-          }
-        }catch(priceErr){console.warn('LUNDUYAN posted-price lookup failed',priceErr);}
-      }
-      const aiMessage=priceContext ? text+priceContext : text;
-      const {data,error}=await window.supabaseClient.functions.invoke('lunduyan-ai',{body:{message:aiMessage,history,price_context:priceContext||null,request_type:priceQuestion?'price_research':'general'}});
+      const {data,error}=await window.supabaseClient.functions.invoke('lunduyan-ai',{body:{message:text,history}});
       if(error)throw error;
       const answer=data?.answer||'I could not generate an answer right now. Please try again.';
       removeTyping(typingId);addBot(answer,data?.annotations||[]);
