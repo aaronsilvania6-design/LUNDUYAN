@@ -10497,16 +10497,16 @@ setTimeout(run,700);
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
-    const canVote=isFarmer()&&!!r.is_current_contributor&&!closed;
+    const canVote=isFarmer()&&!closed;
     const selected=window.__aggregationVoteSelection?.[String(r.id)]||r.my_vote||'';
-    const voteNote=closed?'Voting complete — final community price selected.':canVote?'Choose one price, then tap VOTE PRICE.':'Contributing farmers vote on the final community price.';
+    const voteNote=closed?'Voting complete — final community price selected.':canVote?'Choose one price, then tap VOTE PRICE.':'Voting is closed.';
     const choices=options.map(o=>{
       const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;
       const mine=String(selected)===String(o.id);
       return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="selectAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;
     }).join('');
     const voteButton=canVote?`<button type="button" class="hero-primary aggregation-vote-submit" onclick="submitAggregationVote('${r.id}')">🗳️ VOTE PRICE</button>`:'';
-    return `<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">${closed?'FINAL: ':''}₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${choices}${voteButton}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
+    return `<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">${closed?'FINAL: ':''}₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${choices}${voteButton}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per farmer · You can change your vote'}</div></div>`;
   }
 
   window.selectAggregationPrice=function(requestId,optionId){
@@ -10538,10 +10538,10 @@ setTimeout(run,700);
   }
 
   window.submitAggregationVote=async function(requestId){
-    if(!isFarmer()){alert('Only contributing farmers can vote on the final community price.');return;}
+    if(!isFarmer()){alert('Only farmer accounts can vote on the final community price.');return;}
     const optionId=window.__aggregationVoteSelection?.[String(requestId)];
     if(!optionId){alert('Please choose a price first.');return;}
-    const {error}=await supabaseClient.rpc('submit_aggregation_price_vote',{p_request_id:requestId,p_option_id:optionId});
+    const {error}=await supabaseClient.rpc('submit_aggregation_price_vote_v2',{p_request_id:requestId,p_option_id:optionId});
     if(error){alert(error.message);return;}
     if(window.__aggregationVoteSelection)delete window.__aggregationVoteSelection[String(requestId)];
     await loadAggregations();
