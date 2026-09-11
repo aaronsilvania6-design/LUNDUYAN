@@ -2477,20 +2477,10 @@ Login
 <form class="hidden" id="signupForm">
 <label>Full Name</label>
 <input id="signupName" placeholder="Juan Dela Cruz" required=""/>
-<label>Sign up using</label>
-<div aria-label="Choose signup method" class="auth-method-toggle" role="tablist">
-<button class="auth-method-btn active" id="signupEmailMethod" onclick="setSignupMethod('email')" type="button">Email</button>
-<button class="auth-method-btn" id="signupPhoneMethod" onclick="setSignupMethod('phone')" type="button">Phone Number</button>
-</div>
-<div id="signupEmailWrap">
 <label>Email</label>
-<input autocomplete="email" id="signupEmail" inputmode="email" placeholder="you@example.com" type="email"/>
-</div>
-<div class="hidden" id="signupPhoneWrap">
+<input autocomplete="email" id="signupEmail" inputmode="email" placeholder="you@example.com" required type="email"/>
 <label>Phone Number</label>
-<input autocomplete="tel" id="signupPhone" inputmode="tel" placeholder="09XXXXXXXXX or +63XXXXXXXXXX" type="tel"/>
-</div>
-<p class="auth-role-note">Use either your email <strong>or</strong> phone number. You only need one.</p>
+<input autocomplete="tel" id="signupPhone" inputmode="tel" placeholder="09XXXXXXXXX or +63XXXXXXXXXX" required type="tel"/>
 
 <label>Password</label>
 <input id="signupPassword" minlength="8" placeholder="Minimum 8 characters" required="" type="password"/>
@@ -3007,7 +2997,7 @@ function showAuthMessage(text,type=""){
 LANDING / AUTH
 ========================================================= */
 
-window.signupMethod = "email";
+window.signupMethod = "both";
 
 function isValidEmail(value){
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
@@ -3025,25 +3015,8 @@ function normalizePhone(value){
   return v;
 }
 
-function setSignupMethod(method){
-  window.signupMethod = method === "phone" ? "phone" : "email";
-
-  const emailWrap = document.getElementById("signupEmailWrap");
-  const phoneWrap = document.getElementById("signupPhoneWrap");
-  const emailBtn = document.getElementById("signupEmailMethod");
-  const phoneBtn = document.getElementById("signupPhoneMethod");
-  const emailInput = document.getElementById("signupEmail");
-  const phoneInput = document.getElementById("signupPhone");
-
-  emailWrap?.classList.toggle("hidden", window.signupMethod !== "email");
-  phoneWrap?.classList.toggle("hidden", window.signupMethod !== "phone");
-  emailBtn?.classList.toggle("active", window.signupMethod === "email");
-  phoneBtn?.classList.toggle("active", window.signupMethod === "phone");
-
-  if(emailInput) emailInput.required = window.signupMethod === "email";
-  if(phoneInput) phoneInput.required = window.signupMethod === "phone";
-
-  document.getElementById("authMessage").textContent = "";
+function setSignupMethod(){
+  window.signupMethod = "both";
 }
 
 function backToLanding(){
@@ -3098,8 +3071,6 @@ function showLogin(){
 
 
 function showSignup(){
-
-  setSignupMethod(window.signupMethod || "email");
 
 
   document
@@ -3203,18 +3174,15 @@ document
       .getElementById("signupEmail")
       .value.trim();
 
-  const signupMethod =
-    window.signupMethod || "email";
-
   const normalizedPhone =
     normalizePhone(phone);
 
-  if(signupMethod === "email" && !isValidEmail(email)){
+  if(!isValidEmail(email)){
     showAuthMessage("Please enter a valid email address.", "error");
     return;
   }
 
-  if(signupMethod === "phone" && !isPhoneNumber(phone)){
+  if(!isPhoneNumber(phone)){
     showAuthMessage("Please enter a valid phone number.", "error");
     return;
   }
@@ -3249,30 +3217,26 @@ document
     creating the public users profile.
   */
 
-  const signupCredentials =
-    signupMethod === "phone"
-      ? { phone: normalizedPhone, password }
-      : { email: email.toLowerCase(), password };
-
+  // Supabase creates the account with the email identity first.
+  // Once a session exists, attach the phone number to the same user so
+  // the account can be used to sign in with either email OR phone.
   const {
     data,
     error
   } =
   await supabaseClient.auth.signUp({
-
-    ...signupCredentials,
-
+    email: email.toLowerCase(),
+    password,
     options:{
       data:{
         full_name:fullName,
-        phone:signupMethod === "phone" ? normalizedPhone : null,
-        signup_method:signupMethod,
+        phone:normalizedPhone,
+        signup_method:"email_and_phone",
         role:role,
         roles:[role],
         active_role:role
       }
     }
-
   });
 
   if(error){
@@ -3287,14 +3251,26 @@ document
 
   if(data.user && data.session){
 
-    await initializeApp(data.user);
+    // Attach the phone as a second sign-in identity on the same Auth user.
+    const { data:phoneData, error:phoneError } =
+      await supabaseClient.auth.updateUser({ phone: normalizedPhone });
+
+    if(phoneError){
+      const msg=String(phoneError.message||"");
+      if(/phone.*disabled|phone_provider_disabled/i.test(msg)){
+        showAuthMessage("Account created, but Phone Auth is disabled in Supabase. Enable Phone provider, then try again.","error");
+      }else{
+        showAuthMessage("Account created, but the phone number could not be linked. Please check Phone Auth settings and try again.","error");
+      }
+      return;
+    }
+
+    await initializeApp(phoneData?.user || data.user);
 
   }else{
 
     showAuthMessage(
-      signupMethod === "phone"
-        ? "Account created! You can now log in with your phone number and password."
-        : "Account created! Check your email for verification, then log in with your email.",
+      "Account created! Email confirmation must be completed before the phone can be linked. After confirmation, sign in with your email and add the phone number, or disable Email confirmations for this school/demo app.",
       "success"
     );
 
@@ -10196,7 +10172,7 @@ setTimeout(run,700);
 
 /* =========================================================
    BEAUTIFIED SIGN-UP CONTROLS
-   - Premium segmented Email / Phone selector
+   - Email + Phone required on signup; either one can be used for login
    - Clean Buyer / Farmer role cards
    - Mobile-friendly touch targets
    ========================================================= */
