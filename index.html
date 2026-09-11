@@ -2491,6 +2491,7 @@ Login
 <input autocomplete="tel" id="signupPhone" inputmode="tel" placeholder="09XXXXXXXXX or +63XXXXXXXXXX" type="tel"/>
 </div>
 <p class="auth-role-note">Use either your email <strong>or</strong> phone number. You only need one.</p>
+<p class="auth-role-note">Phone + password works without SMS when Phone confirmations are OFF in Supabase.</p>
 <label>Password</label>
 <input id="signupPassword" minlength="8" placeholder="Minimum 8 characters" required="" type="password"/>
 <label>How will you use LUNDUYAN?</label>
@@ -3165,7 +3166,7 @@ document
   if(error){
     const msg=String(error.message||"Unable to sign in.");
     if(/phone_provider_disabled|phone.*disabled/i.test(msg)){
-      showAuthMessage("Phone login is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider in Supabase Authentication > Providers, then try again.","error");
+      showAuthMessage("Phone login is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider in Authentication > Providers. Keep Phone confirmations OFF if you do not want SMS.","error");
     }else{
       showAuthMessage(msg,"error");
     }
@@ -3277,7 +3278,7 @@ document
   if(error){
     const msg=String(error.message||"Unable to create the account.");
     if(/phone_provider_disabled|phone.*disabled/i.test(msg)){
-      showAuthMessage("Phone signup is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider and configure an SMS provider, then try again.","error");
+      showAuthMessage("Phone signup is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider. For free phone + password signup, keep Phone confirmations OFF.","error");
     }else{
       showAuthMessage(msg,"error");
     }
@@ -3292,7 +3293,7 @@ document
 
     showAuthMessage(
       signupMethod === "phone"
-        ? "Account created! Check your phone for the verification code, then log in with your phone number."
+        ? "Account created! You can now log in with your phone number and password."
         : "Account created! Check your email for verification, then log in with your email.",
       "success"
     );
