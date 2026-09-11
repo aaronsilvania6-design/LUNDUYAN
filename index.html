@@ -3163,12 +3163,12 @@ document
     );
 
   if(error){
-
-    showAuthMessage(
-      error.message,
-      "error"
-    );
-
+    const msg=String(error.message||"Unable to sign in.");
+    if(/phone_provider_disabled|phone.*disabled/i.test(msg)){
+      showAuthMessage("Phone login is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider in Supabase Authentication > Providers, then try again.","error");
+    }else{
+      showAuthMessage(msg,"error");
+    }
     return;
   }
 
@@ -3275,12 +3275,12 @@ document
   });
 
   if(error){
-
-    showAuthMessage(
-      error.message,
-      "error"
-    );
-
+    const msg=String(error.message||"Unable to create the account.");
+    if(/phone_provider_disabled|phone.*disabled/i.test(msg)){
+      showAuthMessage("Phone signup is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider and configure an SMS provider, then try again.","error");
+    }else{
+      showAuthMessage(msg,"error");
+    }
     return;
   }
 
@@ -3487,6 +3487,7 @@ async function initializeApp(user){
 
   document.body.classList.toggle("role-farmer", farmer);
   document.body.classList.toggle("role-buyer", !farmer);
+  window.dispatchEvent(new Event('lunduyan:role-ready'));
   setupRoleHome();
 
   document
@@ -10653,7 +10654,7 @@ setTimeout(run,700);
       const statusClass=status==='TARGET_REACHED'||status==='SOLD'?'target':(status==='COMPLETED'||status==='CANCELLED'?'closed':'');
       const displayedPrice=String(r.poll?.status||'').toUpperCase()==='CLOSED'&&r.poll?.winning_price!=null?r.poll.winning_price:r.offer_price;
       let action='';
-      if(currentRole==='FARMER'&&remaining>0&&status==='OPEN') action=`<button class="hero-primary aggregation-action-btn" type="button" onclick="openAggregationContribution('${r.id}')">＋ Contribute Harvest</button>`;
+      if((currentRole==='FARMER'||document.body.classList.contains('role-farmer'))&&remaining>0&&status==='OPEN') action=`<button class="hero-primary aggregation-action-btn mobile-contribute-btn" type="button" onclick="openAggregationContribution('${r.id}')">＋ Contribute Harvest</button>`;
       if(currentRole==='BUYER'&&status==='TARGET_REACHED'&&total>=target) action=`<button class="hero-primary aggregation-action-btn" type="button" onclick="buyAggregatedSupply('${r.id}')">🛒 Buy Full Pooled Supply</button>`;
       if(currentRole==='BUYER'&&status==='OPEN') action=`<span class="aggregation-waiting">Waiting for farmers · ${contributorCount} contributor${contributorCount===1?'':'s'}</span>`;
       if(status==='SOLD') action=`<span class="aggregation-waiting success">Community pool purchased</span>`;
@@ -10726,6 +10727,7 @@ setTimeout(run,700);
 
   window.loadAggregations=loadAggregations;
   document.addEventListener('DOMContentLoaded',()=>{wireForms();setTimeout(()=>{wireForms();if(currentProfile)loadAggregations();},700);});
+  window.addEventListener('lunduyan:role-ready',()=>{setTimeout(()=>loadAggregations(),50);});
 })();
 </script>
 
@@ -10745,7 +10747,8 @@ setTimeout(run,700);
 .aggregation-role-note{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.5}
 .aggregation-pool-stats{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0;padding:10px 12px;background:#f5faf6;border:1px solid #e1ebe4;border-radius:12px;color:#4d5d53;font-size:12px}
 .aggregation-pool-stats b{color:var(--green);font-size:14px}
-.aggregation-action-btn{justify-content:center!important;width:100%!important}
+ .aggregation-action-btn{justify-content:center!important;width:100%!important;min-height:48px!important;font-size:15px!important;display:inline-flex!important;align-items:center!important;visibility:visible!important;opacity:1!important;}
+@media(max-width:700px){.mobile-contribute-btn{position:relative!important;z-index:6!important;display:flex!important;width:100%!important;min-height:50px!important;margin-top:4px!important;touch-action:manipulation!important;}}
 @media(max-width:700px){
   .auth-card{padding:18px 14px 90px!important}
   .auth-back-btn{min-height:44px!important;width:100%!important;justify-content:center!important}
@@ -11875,6 +11878,7 @@ window.__setLunduAIbusy=function(v){
       <div id="moderationReportFields" class="hidden">
         <label for="moderationReportedUser">Account to report</label>
         <input id="moderationReportedUser" maxlength="120" placeholder="Enter the user's name or account ID">
+        <input id="moderationReportedUserId" type="hidden" value="">
         <label for="moderationReportReason">Reason</label>
         <select id="moderationReportReason">
           <option value="Spam">Spam</option>
@@ -11965,18 +11969,23 @@ window.__setLunduAIbusy=function(v){
     if(btn)btn.textContent=moderationType==='REPORT'?'Submit Report':'Send to Moderators';
   };
 
-  window.openModerationFeedback=function(type='FEEDBACK',reportedUser=''){
+  window.openModerationFeedback=function(type='FEEDBACK',reportedUser='',reportedUserId=''){
     const modal=$('moderationFeedbackModal');
     if(!modal)return;
     setModerationType(type);
     $('moderationSubject').value='';
     $('moderationMessage').value='';
     $('moderationReportedUser').value=reportedUser||'';
+    $('moderationReportedUserId').value=reportedUserId||'';
     $('moderationReportMessage').value='';
     $('moderationFeedbackStatus').innerHTML='';
     modal.classList.remove('hidden');
     if(typeof setModalScrollLock==='function')setModalScrollLock(true);
-    $('moderationSubject')?.focus();
+    if(type==='REPORT'){
+      $('moderationReportReason')?.focus();
+    }else{
+      $('moderationSubject')?.focus();
+    }
   };
   window.closeModerationFeedback=function(){
     $('moderationFeedbackModal')?.classList.add('hidden');
@@ -11999,10 +12008,11 @@ window.__setLunduAIbusy=function(v){
         await submitModeratorFeedback({subject,message,category:'FEEDBACK'});
       }else{
         const reported=$('moderationReportedUser')?.value.trim()||'';
+        const reportedId=$('moderationReportedUserId')?.value.trim()||'';
         const reason=$('moderationReportReason')?.value||'Other';
         const details=$('moderationReportMessage')?.value.trim()||'';
         if(!reported){if(status)status.innerHTML='<div class="message error">Enter the account you want to report.</div>';return;}
-        await submitModeratorFeedback({subject:'Account report: '+reported,message:details||'No additional details provided.',category:'REPORT',reported_account:reported,reason});
+        await submitModeratorFeedback({subject:'Account report: '+reported,message:details||'No additional details provided.',category:'REPORT',reported_account:reportedId||reported,reason});
       }
       if(status)status.innerHTML='<div class="message success">Sent successfully. Thank you for helping improve LUNDUYAN.</div>';
       setTimeout(()=>window.closeModerationFeedback(),700);
@@ -12460,6 +12470,31 @@ window.__setLunduAIbusy=function(v){
   document.addEventListener('DOMContentLoaded',()=>setTimeout(fixProfileScroll,500));
   [1000,2000,3500,5000].forEach(t=>setTimeout(fixProfileScroll,t));
   new MutationObserver(()=>requestAnimationFrame(fixProfileScroll)).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<script id="LUNDUYAN_DIRECT_PROFILE_REPORT_FLOW">
+(function(){
+  'use strict';
+  function nameOf(v){return String(v??'User').trim()||'User';}
+  window.reportFarmer=function(farmerId,farmerName){
+    if(typeof window.openModerationFeedback!=='function')return;
+    window.openModerationFeedback('REPORT',nameOf(farmerName),String(farmerId??''));
+  };
+  window.reportUser=function(otherId,otherName){
+    if(typeof window.openModerationFeedback!=='function')return;
+    window.openModerationFeedback('REPORT',nameOf(otherName),String(otherId??''));
+  };
+  window.reportReview=function(reviewId){
+    // Keep review reporting functional without a browser prompt.
+    const modal=document.getElementById('moderationFeedbackModal');
+    if(!modal || typeof window.openModerationFeedback!=='function')return;
+    window.openModerationFeedback('FEEDBACK');
+    const subject=document.getElementById('moderationSubject');
+    const message=document.getElementById('moderationMessage');
+    if(subject)subject.value='Report review';
+    if(message)message.value='I would like to report review ID '+String(reviewId||'')+'. Please review this content.';
+  };
 })();
 </script>
 </body>
