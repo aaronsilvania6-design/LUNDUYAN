@@ -3356,9 +3356,9 @@ async function initializeApp(user){
        can never show the wrong interface. */
     const metadataRole =
       String(
+        currentProfile.role ||
         (user.user_metadata || {}).active_role ||
         (user.user_metadata || {}).role ||
-        currentProfile.role ||
         "BUYER"
       ).trim().toUpperCase();
 
@@ -6564,14 +6564,8 @@ async function submitModeratorFeedback(payload){
 
 async function reportFarmer(farmerId,farmerName){
   if(!currentProfile || !farmerId) return;
-  const reason=prompt(`Why are you reporting ${farmerName}? Examples: spam, fake profile, suspicious activity, harassment, inappropriate content, or other.`);
-  if(reason===null) return;
-  const cleanReason=reason.trim()||'Other';
-  const details=prompt('Optional: add more details about this report.')||'';
-  try{
-    await submitModeratorFeedback({subject:'Account report: '+String(farmerName||'User'),message:details.trim()||'No additional details provided.',category:'REPORT',reported_account:String(farmerId),reason:cleanReason});
-  }catch(error){ alert('Unable to submit report: '+(error?.message||error)); return; }
-  alert('Report sent to LUNDUYAN moderators. Thank you.');
+  if(typeof openMyProfile==='function') await openMyProfile();
+  showFeedbackSuggestion('REPORT',String(farmerId),String(farmerName||'User'));
 }
 
 const __loadProductsWithBlocksBase = loadProducts;
@@ -8519,17 +8513,9 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
 
   window.reportUser=async function(otherId,otherName){
     if(!currentProfile||!otherId||same(otherId,currentProfile.id))return;
-    const reason=prompt(`Why are you reporting ${otherName||'this user'}?Examples: spam, fake profile, scam attempt, harassment, inappropriate content, or other.`);
-    if(reason===null)return;
-    const clean=reason.trim()||'Other';
-    const details=prompt('Optional: Add more details about this report.')||null;
-    try{ await submitModeratorFeedback({subject:'Account report',message:details?.trim()||'No additional details provided.',category:'REPORT',reported_account:String(otherId),reason:clean}); }
-    catch(error){
-      if(String(error?.code)==='23505'||String(error?.message||'').toLowerCase().includes('duplicate'))alert('You already reported this account.');
-      else alert(error?.message||error);
-      return;
-    }
-    alert('Report submitted successfully.');
+    if($('profileModal')) $('profileModal').classList.add('hidden');
+    if(typeof openMyProfile==='function') await openMyProfile();
+    showFeedbackSuggestion('REPORT',String(otherId),String(otherName||'User'));
   };
 
   window.messageUserFromProfile=async function(otherId){
@@ -8867,16 +8853,9 @@ LUNDUYAN TWO-WAY PROFILE / BLOCK / REPORT SECURITY PATCH
 
   window.reportUser=async function(otherId,otherName){
     if(!currentProfile||!otherId||same(otherId,currentProfile.id))return;
-    const reason=prompt(`Why are you reporting ${otherName||'this user'}?Examples: spam, fake profile, suspicious activity, harassment, inappropriate content, or other.`);
-    if(reason===null)return;
-    const clean=reason.trim()||'Other';
-    const details=prompt('Optional: Add more details about this report.')||null;
-    try{ await submitModeratorFeedback({subject:'Account report',message:details?.trim()||'No additional details provided.',category:'REPORT',reported_account:sid(otherId),reason:clean}); }
-    catch(error){
-      if(String(error?.code)==='23505'||String(error?.message||'').toLowerCase().includes('duplicate'))alert('You already reported this account.');
-      else alert(error?.message||error);return;
-    }
-    alert('Report submitted successfully.');
+    if($('profileModal')) $('profileModal').classList.add('hidden');
+    if(typeof openMyProfile==='function') await openMyProfile();
+    showFeedbackSuggestion('REPORT',String(otherId),String(otherName||'User'));
   };
 
   /* ---------------- Products: disappear immediately for either-direction blocks ---------------- */
@@ -10444,6 +10423,16 @@ setTimeout(run,700);
   window.closeAggregationContribution=function(){$('aggregationContributionModal')?.classList.add('hidden');if(typeof setModalScrollLock==='function')setModalScrollLock(false);currentAggregation=null;};
 
   async function loadAggregations(){
+    /* Always trust the role saved in the users table for voting. This prevents
+       stale auth metadata from making a real FARMER look like a BUYER. */
+    try{
+      if(window.currentProfile?.id){
+        const {data:dbUser}=await supabaseClient.from('users').select('role').eq('id',window.currentProfile.id).maybeSingle();
+        if(dbUser?.role){
+          window.currentProfile.role=String(dbUser.role).trim().toUpperCase();
+        }
+      }
+    }catch(e){console.warn('Aggregation role refresh:',e);}
     const grid=$('aggregationGrid');updateRoleUI();if(!grid||!window.currentProfile||!window.supabaseClient)return;
     grid.innerHTML='<div class="aggregation-empty">Loading farmer community pools...</div>';
     const selectFields=`*, creator:creator_id(full_name), aggregation_contributions(id,farmer_id,quantity,status,proposed_price,farmer:farmer_id(full_name)), aggregation_price_polls(id,status,winning_price,aggregation_price_options(id,price,aggregation_price_votes(count)))`;
@@ -10490,23 +10479,26 @@ setTimeout(run,700);
 
   function renderPricePoll(r){
     const status=String(r.status||'OPEN').toUpperCase();
-    if(status!=='TARGET_REACHED' && status!=='SOLD') return '<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
+    if(status!=='TARGET_REACHED' && status!=='SOLD') return '';
     const poll=r.poll;
     const options=r.price_options||[];
-    if(!poll||!options.length) return '<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>Voting choices are unavailable. Please make sure the voting SQL fix is installed.</small></div></div></div>';
+    if(!poll||!options.length) return '<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>Preparing the price choices…</small></div></div></div>';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
-    const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
-    const canVote=isFarmer()&&!closed;
     const selected=window.__aggregationVoteSelection?.[String(r.id)]||r.my_vote||'';
-    const voteNote=closed?'Voting complete — final community price selected.':canVote?'Choose one price, then tap VOTE PRICE.':'Voting is closed.';
+    const selectedOption=options.find(o=>String(o.id)===String(selected));
+    const canVote=isFarmer()&&!closed;
+    const voteNote=closed?'Voting complete — the final community price is shown below.':canVote?'Tap a price to select it. Your selection will be highlighted.':'Sign in as a FARMER to vote.';
     const choices=options.map(o=>{
       const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;
       const mine=String(selected)===String(o.id);
-      return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="selectAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${o.votes} vote${o.votes===1?'':'s'}</em></button>`;
+      return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} aria-pressed="${mine?'true':'false'}" onclick="selectAggregationPrice('${r.id}','${o.id}')"><span class="poll-option-main"><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><em>${mine?'✓ SELECTED · ':''}${o.votes} vote${o.votes===1?'':'s'}</em></button>`;
     }).join('');
-    const voteButton=canVote?`<button type="button" class="hero-primary aggregation-vote-submit" onclick="submitAggregationVote('${r.id}')">🗳️ VOTE PRICE</button>`:'';
-    return `<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">${closed?'FINAL: ':''}₱${money(closed?(poll.winning_price??leader?.price):leader?.price)}/${esc(r.unit)}</span></div>${choices}${voteButton}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per farmer · You can change your vote'}</div></div>`;
+    const selectionHint=canVote
+      ? (selectedOption?`<div class="aggregation-selected-price">✓ Selected: <strong>₱${money(selectedOption.price)} / ${esc(r.unit)}</strong><span>You can change your selection by tapping another price.</span></div>`:'<div class="aggregation-select-hint">Choose one price above. The selected price will turn green.</div>')
+      : '';
+    const voteButton=canVote?`<button type="button" class="hero-primary aggregation-vote-submit ${selectedOption?'ready':''}" onclick="submitAggregationVote('${r.id}')">🗳️ ${selectedOption?'CONFIRM VOTE':'VOTE PRICE'}</button>`:'';
+    return `<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${voteNote}</small></div><span class="poll-leader">${closed?'FINAL: ':''}₱${money(closed?(poll.winning_price??selectedOption?.price):selectedOption?.price??options[0]?.price)}/${esc(r.unit)}</span></div><div class="aggregation-poll-instruction">${closed?'Final price has been decided.':'Select the price you think is fair for the community.'}</div>${choices}${selectionHint}${voteButton}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Voting closed':' · 1 vote per farmer · You can change your choice before confirming'}</div></div>`;
   }
 
   window.selectAggregationPrice=function(requestId,optionId){
@@ -10538,7 +10530,11 @@ setTimeout(run,700);
   }
 
   window.submitAggregationVote=async function(requestId){
-    if(!isFarmer()){alert('Only farmer accounts can vote on the final community price.');return;}
+    try{
+      const {data:dbUser}=await supabaseClient.from('users').select('role').eq('id',window.currentProfile?.id).maybeSingle();
+      if(dbUser?.role) window.currentProfile.role=String(dbUser.role).trim().toUpperCase();
+    }catch(e){}
+    if(!isFarmer()){alert('Your account is not marked as FARMER in your profile. Please switch to FARMER first.');return;}
     const optionId=window.__aggregationVoteSelection?.[String(requestId)];
     if(!optionId){alert('Please choose a price first.');return;}
     const {error}=await supabaseClient.rpc('submit_aggregation_price_vote_v2',{p_request_id:requestId,p_option_id:optionId});
@@ -11809,6 +11805,12 @@ window.__setLunduAIbusy=function(v){
     border-radius:13px!important;
     font-weight:800!important;
   }
+  /* Non-modal feedback / report section for MIT-friendly navigation */
+  .lunduyan-feedback-section{margin-top:14px;border:1px solid #dfe8e2;border-radius:18px;background:#fff;padding:16px;box-shadow:0 6px 20px rgba(20,70,40,.06)}
+  .lunduyan-feedback-section h3{margin:0 0 4px;font-size:17px}.lunduyan-feedback-section .helper{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.45}
+  .lunduyan-feedback-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px}.lunduyan-feedback-tabs button{border:1px solid #d8e4dc;background:#f7faf8;border-radius:12px;padding:11px 8px;font-weight:800;color:#36533f}.lunduyan-feedback-tabs button.active{background:#e8f6ec;border-color:#62b878;color:#16733a}
+  .lunduyan-feedback-section label{display:block;font-size:12px;font-weight:800;margin:10px 0 6px}.lunduyan-feedback-section input,.lunduyan-feedback-section textarea,.lunduyan-feedback-section select{width:100%;box-sizing:border-box;border:1px solid #d7e2da;border-radius:11px;padding:11px;background:#fff;font:inherit}.lunduyan-feedback-section textarea{resize:vertical;min-height:110px}
+  .lunduyan-feedback-submit{width:100%;margin-top:12px;border:0;border-radius:12px;padding:12px;background:#238b45;color:#fff;font-weight:900}.lunduyan-feedback-status{margin-top:10px;font-size:12px;line-height:1.4}.lunduyan-feedback-status.success{color:#18723a}.lunduyan-feedback-status.error{color:#b42318}
   .lunduyan-feedback-btn{
     border:1px solid #cfe7d6!important;
     background:#f4fbf6!important;
@@ -11821,6 +11823,7 @@ window.__setLunduAIbusy=function(v){
   }
 
   /* Polished feedback/report modal */
+  #moderationFeedbackModal{display:none!important}
   #moderationFeedbackModal .modal-card{
     max-width:620px!important;
     padding:0!important;
@@ -12022,10 +12025,11 @@ window.__setLunduAIbusy=function(v){
       actions=document.createElement('div');
       actions.className='lunduyan-profile-actions';
       actions.innerHTML=`
-        <button type="button" class="lunduyan-feedback-btn" onclick="openModerationFeedback('FEEDBACK')">💡 Feedback / Help</button>
+        <button type="button" class="lunduyan-feedback-btn" onclick="showFeedbackSuggestion('FEEDBACK')">💡 Feedback / Suggestion</button>
         `;
       box.appendChild(actions);
     }
+    ensureFeedbackSection(box);
     if(['MODERATOR','ADMIN','DEVELOPER'].includes(role()) && !box.querySelector('.lunduyan-moderator-btn')){
       const b=document.createElement('button');
       b.type='button'; b.className='lunduyan-moderator-btn primary-btn';
@@ -12035,6 +12039,73 @@ window.__setLunduAIbusy=function(v){
       box.appendChild(b);
     }
     requestAnimationFrame(()=>{box.scrollTop=0;});
+  };
+
+  /* ---------- Inline feedback / report section (no popups) ---------- */
+  function ensureFeedbackSection(box){
+    if(!box || box.querySelector('.lunduyan-feedback-section')) return;
+    const section=document.createElement('section');
+    section.className='lunduyan-feedback-section';
+    section.id='feedbackSuggestionSection';
+    section.innerHTML=`
+      <h3>Feedback / Suggestion</h3>
+      <p class="helper">Tell us what you think or report an account. Everything is submitted directly to LUNDUYAN moderators.</p>
+      <div class="lunduyan-feedback-tabs">
+        <button type="button" id="inlineFeedbackTab" class="active" onclick="showFeedbackSuggestion('FEEDBACK')">💡 Feedback</button>
+        <button type="button" id="inlineReportTab" onclick="showFeedbackSuggestion('REPORT')">⚑ Report an Account</button>
+      </div>
+      <div id="inlineFeedbackFields">
+        <label>Subject</label>
+        <input id="inlineFeedbackSubject" maxlength="120" placeholder="What would you like to suggest?"><label>Message</label>
+        <textarea id="inlineFeedbackMessage" maxlength="2000" placeholder="Write your feedback or suggestion..."></textarea>
+      </div>
+      <div id="inlineReportFields" class="hidden">
+        <label>Reported account</label>
+        <input id="inlineReportedAccount" maxlength="120" readonly placeholder="Account name will appear here">
+        <input id="inlineReportedAccountId" type="hidden">
+        <label>Reason</label>
+        <select id="inlineReportReason"><option>Spam</option><option>Scam or suspicious activity</option><option>Harassment or abuse</option><option>Fake account</option><option>Inappropriate content</option><option>Other</option></select>
+        <label>Details</label>
+        <textarea id="inlineReportMessage" maxlength="2000" placeholder="Explain what happened..."></textarea>
+      </div>
+      <div id="inlineFeedbackStatus" class="lunduyan-feedback-status"></div>
+      <button type="button" class="lunduyan-feedback-submit" id="inlineFeedbackSubmit" onclick="submitInlineFeedback()">Send Feedback</button>`;
+    box.appendChild(section);
+  }
+  window.showFeedbackSuggestion=function(type='FEEDBACK',reportedId='',reportedName=''){
+    const box=$('myProfileContent'); if(!box)return;
+    ensureFeedbackSection(box);
+    const report=type==='REPORT';
+    $('inlineFeedbackTab')?.classList.toggle('active',!report); $('inlineReportTab')?.classList.toggle('active',report);
+    $('inlineFeedbackFields')?.classList.toggle('hidden',report); $('inlineReportFields')?.classList.toggle('hidden',!report);
+    const btn=$('inlineFeedbackSubmit'); if(btn)btn.textContent=report?'Submit Report':'Send Feedback';
+    if(report){
+      $('inlineReportedAccount').value=reportedName||'';
+      $('inlineReportedAccountId').value=reportedId||'';
+      $('inlineFeedbackStatus').textContent=''; $('inlineFeedbackStatus').className='lunduyan-feedback-status';
+    }
+    requestAnimationFrame(()=>sectionScroll());
+  };
+  function sectionScroll(){ $('feedbackSuggestionSection')?.scrollIntoView({behavior:'smooth',block:'start'}); }
+  window.submitInlineFeedback=async function(){
+    const p=profile(); if(!p){return;}
+    const report=!$('inlineReportFields')?.classList.contains('hidden');
+    const status=$('inlineFeedbackStatus'),btn=$('inlineFeedbackSubmit');
+    if(btn)btn.disabled=true; if(status){status.textContent='Sending...';status.className='lunduyan-feedback-status';}
+    try{
+      if(report){
+        const reportedId=$('inlineReportedAccountId')?.value.trim(); const reportedName=$('inlineReportedAccount')?.value.trim();
+        if(!reportedId){throw new Error('Reported account is missing. Please open Report from the user profile again.');}
+        await submitModeratorFeedback({subject:'Account report: '+reportedName,message:$('inlineReportMessage')?.value.trim()||'No additional details provided.',category:'REPORT',reported_account:reportedId,reason:$('inlineReportReason')?.value||'Other'});
+        if(status){status.textContent='Report submitted successfully. Thank you.';status.className='lunduyan-feedback-status success';}
+      }else{
+        const message=$('inlineFeedbackMessage')?.value.trim(); if(!message)throw new Error('Please write your feedback or suggestion first.');
+        await submitModeratorFeedback({subject:$('inlineFeedbackSubject')?.value.trim()||'General feedback',message,category:'FEEDBACK'});
+        if(status){status.textContent='Feedback sent successfully. Thank you.';status.className='lunduyan-feedback-status success';}
+        $('inlineFeedbackMessage').value='';
+      }
+    }catch(e){if(status){status.textContent=e?.message||'Unable to send. Please try again.';status.className='lunduyan-feedback-status error';}}
+    finally{if(btn)btn.disabled=false;}
   };
 
   /* ---------- Polished feedback/report flow ---------- */
@@ -12682,6 +12753,37 @@ window.__setLunduAIbusy=function(v){
   #aggregationSection .aggregation-actions{
     padding-bottom:12px!important;
   }
+}
+</style>
+
+
+<style id="LUNDUYAN_VOTING_SYSTEM_FINAL_DESIGN">
+#aggregationSection .aggregation-vote-ready{margin-top:16px!important;border:1px solid rgba(22,131,59,.22)!important;border-radius:18px!important;background:linear-gradient(180deg,#f7fff9 0%,#fff 100%)!important;padding:16px!important}
+#aggregationSection .aggregation-vote-ready .poll-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;margin-bottom:10px!important}
+#aggregationSection .aggregation-vote-ready .poll-head strong{font-size:15px!important;font-weight:900!important;display:block!important}
+#aggregationSection .aggregation-vote-ready .poll-head small{display:block!important;margin-top:3px!important;opacity:.72!important}
+#aggregationSection .poll-leader{font-weight:900!important;white-space:nowrap!important}
+#aggregationSection .aggregation-poll-instruction{font-size:13px!important;font-weight:700!important;margin:8px 0 12px!important}
+#aggregationSection .poll-option{position:relative!important;width:100%!important;min-height:72px!important;margin:8px 0!important;padding:12px 14px!important;border:2px solid #e4e9e5!important;border-radius:14px!important;background:#fff!important;color:inherit!important;text-align:left!important;cursor:pointer!important;display:grid!important;grid-template-columns:1fr auto!important;gap:7px 12px!important;transition:transform .12s,border-color .12s,box-shadow .12s,background .12s!important}
+#aggregationSection .poll-option:not(:disabled):hover{transform:translateY(-1px)!important;border-color:#16833b!important}
+#aggregationSection .poll-option.selected{border-color:#16833b!important;background:#effbf2!important;box-shadow:0 0 0 3px rgba(22,131,59,.12)!important}
+#aggregationSection .poll-option.selected:after{content:'✓';position:absolute!important;top:8px!important;right:9px!important;width:24px!important;height:24px!important;border-radius:50%!important;background:#16833b!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:center!important;font-weight:900!important}
+#aggregationSection .poll-option-main{font-size:16px!important;font-weight:800!important}
+#aggregationSection .poll-option em{font-style:normal!important;font-size:11px!important;font-weight:800!important;opacity:.7!important;align-self:center!important}
+#aggregationSection .poll-option.selected em{color:#16833b!important;opacity:1!important}
+#aggregationSection .poll-bar{grid-column:1/-1!important;height:5px!important;border-radius:99px!important;background:#edf1ee!important;overflow:hidden!important}
+#aggregationSection .poll-bar i{display:block!important;height:100%!important;background:#16833b!important;border-radius:99px!important}
+#aggregationSection .aggregation-select-hint{padding:9px 11px!important;border-radius:10px!important;background:#f1f5f2!important;font-size:12px!important;font-weight:700!important}
+#aggregationSection .aggregation-selected-price{display:flex!important;flex-direction:column!important;gap:2px!important;padding:11px 12px!important;margin-top:8px!important;border-radius:12px!important;background:#eaf8ed!important;color:#126b30!important;font-size:13px!important}
+#aggregationSection .aggregation-selected-price span{font-size:11px!important;opacity:.75!important;color:inherit!important}
+#aggregationSection .aggregation-vote-submit{margin-top:10px!important;border-radius:13px!important;min-height:50px!important;font-weight:900!important}
+#aggregationSection .aggregation-vote-submit.ready{box-shadow:0 7px 18px rgba(22,131,59,.18)!important}
+@media(max-width:700px){
+ #aggregationSection .aggregation-vote-ready{padding:13px!important;border-radius:16px!important}
+ #aggregationSection .aggregation-vote-ready .poll-head{align-items:flex-start!important;flex-direction:column!important}
+ #aggregationSection .poll-leader{font-size:14px!important}
+ #aggregationSection .poll-option{min-height:78px!important;padding:13px!important}
+ #aggregationSection .poll-option-main{font-size:16px!important}
 }
 </style>
 
