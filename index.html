@@ -10453,7 +10453,11 @@ setTimeout(run,700);
     try{
       const needsRefresh=(data||[]).filter(r=>String(r.status||'').toUpperCase()==='TARGET_REACHED').map(r=>r.id).filter(Boolean);
       if(needsRefresh.length){
-        await Promise.all(needsRefresh.map(id=>supabaseClient.rpc('refresh_aggregation_price_options',{p_request_id:id})));
+        const results=await Promise.all(needsRefresh.map(async id=>{
+          const r=await supabaseClient.rpc('ensure_aggregation_price_options',{p_request_id:id});
+          if(r.error) console.warn('ensure_aggregation_price_options:',r.error);
+          return r;
+        }));
         const refreshed=await supabaseClient.from('aggregation_requests').select(selectFields).order('created_at',{ascending:false});
         if(!refreshed.error)data=refreshed.data||data;
       }
@@ -10482,7 +10486,7 @@ setTimeout(run,700);
     if(status!=='TARGET_REACHED' && status!=='SOLD') return '<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
     const poll=r.poll;
     const options=r.price_options||[];
-    if(!poll||!options.length) return '<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>Price voting is ready. Refresh if the choices do not appear.</small></div></div></div>';
+    if(!poll||!options.length) return '<div class="aggregation-poll aggregation-vote-ready"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>Price choices are being generated. Please refresh once.</small></div></div></div>';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
@@ -10530,7 +10534,7 @@ setTimeout(run,700);
     if(!isFarmer()){alert('Only contributing farmers can vote on the final community price.');return;}
     const optionId=window.__aggregationVoteSelection?.[String(requestId)];
     if(!optionId){alert('Please choose a price first.');return;}
-    const {error}=await supabaseClient.rpc('vote_aggregation_price',{p_request_id:requestId,p_option_id:optionId});
+    const {error}=await supabaseClient.rpc('submit_aggregation_price_vote',{p_request_id:requestId,p_option_id:optionId});
     if(error){alert(error.message);return;}
     if(window.__aggregationVoteSelection)delete window.__aggregationVoteSelection[String(requestId)];
     await loadAggregations();
