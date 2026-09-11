@@ -10541,6 +10541,20 @@ setTimeout(run,700);
     const grid=$('aggregationGrid');if(!grid)return;updateRoleUI();
     if(!rows.length){grid.innerHTML='<div class="aggregation-empty">No farmer community pools yet. Farmers can create the first pool.</div>';return;}
     const currentRole=role();
+    /* BUYER RULE: community aggregation pools stay completely hidden from the
+       buyer interface until the pool is full AND price voting is CLOSED, so
+       buyers only see pools that are actually ready to purchase. */
+    if(currentRole==='BUYER'){
+      rows=rows.filter(r=>{
+        const status=String(r.status||'OPEN').toUpperCase();
+        const pollStatus=String(r.poll?.status||'OPEN').toUpperCase();
+        return status==='TARGET_REACHED' && pollStatus==='CLOSED';
+      });
+      if(!rows.length){
+        grid.innerHTML='<div class="aggregation-empty">No community aggregation pools are ready to buy yet.</div>';
+        return;
+      }
+    }
     grid.innerHTML=rows.map(r=>{
       const target=Number(r.target_quantity||0),total=Number(r.total_contributed||0),pct=target?Math.min(100,total/target*100):0,remaining=Math.max(target-total,0),status=String(r.status||'OPEN').toUpperCase(),contributors=r.contributors||[];
       const contributorCount=new Set(contributors.map(c=>String(c.farmer_id))).size;
