@@ -2467,7 +2467,7 @@ Create Account
 </div>
 <form id="loginForm">
 <label>Email or Phone Number</label>
-<input autocomplete="username" id="loginEmail" inputmode="email" placeholder="you@example.com or 09XXXXXXXXX" required="" type="text"/>
+<input autocomplete="username" id="loginEmail" inputmode="text" placeholder="Email or 09XXXXXXXXX" required="" type="text"/>
 <label>Password</label>
 <input autocomplete="current-password" id="loginPassword" placeholder="Your password" required="" type="password"/>
 <button class="primary-btn" type="submit">
@@ -3096,8 +3096,43 @@ function showSignup(){
 
 
 /* =========================================================
-LOGIN
+LOGIN — EMAIL OR PHONE, WITHOUT SUPABASE PHONE/SMS AUTH
 ========================================================= */
+
+async function resolveLoginEmailFromPhone(phone){
+  const normalizedPhone = normalizePhone(phone);
+  if(!isPhoneNumber(normalizedPhone)) return null;
+
+  // LUNDUYAN stores the required phone number in public.users during signup.
+  // We use that profile record only to resolve the email identity, then let
+  // Supabase perform the real password authentication with email + password.
+  // This keeps phone login working without enabling Supabase Phone/SMS Auth.
+  // Preferred: a tiny SECURITY DEFINER RPC so the browser does not need
+  // direct read access to the users table while logged out.
+  const rpc = await supabaseClient.rpc("lunduyan_login_email_by_phone", {
+    p_phone: normalizedPhone
+  });
+
+  if(!rpc.error){
+    return rpc.data ? String(rpc.data).trim().toLowerCase() : null;
+  }
+
+  // Backward-compatible fallback for projects whose RLS already allows
+  // public profile reads.
+  const direct = await supabaseClient
+    .from("users")
+    .select("email")
+    .eq("phone", normalizedPhone)
+    .maybeSingle();
+
+  if(direct.error){
+    console.error("Phone login lookup RPC:", rpc.error);
+    console.error("Phone login lookup direct:", direct.error);
+    throw new Error("Phone login is not configured yet. Run the LUNDUYAN_PHONE_LOGIN_NO_SMS.sql file in Supabase SQL Editor.");
+  }
+
+  return direct.data?.email ? String(direct.data.email).trim().toLowerCase() : null;
+}
 
 document
 .getElementById("loginForm")
@@ -3106,8 +3141,7 @@ document
   e.preventDefault();
 
   const loginIdentifier =
-    document.getElementById("loginEmail")
-      .value.trim();
+    document.getElementById("loginEmail").value.trim();
 
   const normalizedLogin = normalizePhone(loginIdentifier);
   const isEmailLogin = loginIdentifier.includes("@");
@@ -3118,39 +3152,50 @@ document
     return;
   }
 
-  const password =
-    document.getElementById("loginPassword")
-      .value;
-
+  const password = document.getElementById("loginPassword").value;
   showAuthMessage("Signing in...");
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient.auth.signInWithPassword(
-      isPhoneLogin
-        ? { phone: normalizedLogin, password }
-        : { email: loginIdentifier.toLowerCase(), password }
-    );
+  try{
+    let credentials;
 
-  if(error){
-    const msg=String(error.message||"Unable to sign in.");
-    if(/phone_provider_disabled|phone.*disabled/i.test(msg)){
-      showAuthMessage("Phone login is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider in Authentication > Providers. Keep Phone confirmations OFF if you do not want SMS.","error");
+    if(isPhoneLogin){
+      const emailForLogin = await resolveLoginEmailFromPhone(normalizedLogin);
+
+      if(!emailForLogin){
+        showAuthMessage("No LUNDUYAN account was found for that phone number.", "error");
+        return;
+      }
+
+      credentials = {
+        email: emailForLogin,
+        password
+      };
     }else{
-      showAuthMessage(msg,"error");
+      credentials = {
+        email: loginIdentifier.toLowerCase(),
+        password
+      };
     }
-    return;
-  }
 
-  await initializeApp(data.user);
+    const {data,error} =
+      await supabaseClient.auth.signInWithPassword(credentials);
+
+    if(error){
+      showAuthMessage(String(error.message||"Unable to sign in."),"error");
+      return;
+    }
+
+    await initializeApp(data.user);
+  }catch(err){
+    console.error("Login error:",err);
+    showAuthMessage(String(err?.message||"Unable to sign in right now."),"error");
+  }
 
 });
 
 
 /* =========================================================
-SIGNUP
+SIGNUP — EMAIL + PHONE REQUIRED
 ========================================================= */
 
 document
@@ -3160,22 +3205,15 @@ document
   e.preventDefault();
 
   const fullName =
-    document
-      .getElementById("signupName")
-      .value.trim();
+    document.getElementById("signupName").value.trim();
 
   const phone =
-    document
-      .getElementById("signupPhone")
-      .value.trim();
+    document.getElementById("signupPhone").value.trim();
 
   const email =
-    document
-      .getElementById("signupEmail")
-      .value.trim();
+    document.getElementById("signupEmail").value.trim();
 
-  const normalizedPhone =
-    normalizePhone(phone);
+  const normalizedPhone = normalizePhone(phone);
 
   if(!isValidEmail(email)){
     showAuthMessage("Please enter a valid email address.", "error");
@@ -3188,96 +3226,53 @@ document
   }
 
   const password =
-    document
-      .getElementById("signupPassword")
-      .value;
+    document.getElementById("signupPassword").value;
 
   const role =
-    document
-      .getElementById("signupRole")
-      .value;
+    document.getElementById("signupRole").value;
 
   if(password.length < 8){
-
-    showAuthMessage(
-      "Password must be at least 8 characters.",
-      "error"
-    );
-
+    showAuthMessage("Password must be at least 8 characters.","error");
     return;
   }
 
-  showAuthMessage(
-    "Creating your account..."
-  );
+  showAuthMessage("Creating your account...");
 
-  /*
-    Store full_name + role in Auth metadata.
-    The SQL trigger can use these values when
-    creating the public users profile.
-  */
-
-  // Supabase creates the account with the email identity first.
-  // Once a session exists, attach the phone number to the same user so
-  // the account can be used to sign in with either email OR phone.
-  const {
-    data,
-    error
-  } =
-  await supabaseClient.auth.signUp({
-    email: email.toLowerCase(),
-    password,
-    options:{
-      data:{
-        full_name:fullName,
-        phone:normalizedPhone,
-        signup_method:"email_and_phone",
-        role:role,
-        roles:[role],
-        active_role:role
+  // IMPORTANT:
+  // Phone is stored in the LUNDUYAN public.users profile. We intentionally
+  // do NOT call auth.updateUser({phone}) here, so this flow does not require
+  // Supabase Phone/SMS Auth, Twilio, or any SMS provider.
+  const {data,error} =
+    await supabaseClient.auth.signUp({
+      email: email.toLowerCase(),
+      password,
+      options:{
+        data:{
+          full_name:fullName,
+          phone:normalizedPhone,
+          signup_method:"email_and_phone",
+          role:role,
+          roles:[role],
+          active_role:role
+        }
       }
-    }
-  });
+    });
 
   if(error){
-    const msg=String(error.message||"Unable to create the account.");
-    if(/phone_provider_disabled|phone.*disabled/i.test(msg)){
-      showAuthMessage("Phone signup is ready in LUNDUYAN, but Phone Auth is disabled in Supabase. Enable Phone provider. For free phone + password signup, keep Phone confirmations OFF.","error");
-    }else{
-      showAuthMessage(msg,"error");
-    }
+    showAuthMessage(String(error.message||"Unable to create the account."),"error");
     return;
   }
 
   if(data.user && data.session){
-
-    // Attach the phone as a second sign-in identity on the same Auth user.
-    const { data:phoneData, error:phoneError } =
-      await supabaseClient.auth.updateUser({ phone: normalizedPhone });
-
-    if(phoneError){
-      const msg=String(phoneError.message||"");
-      if(/phone.*disabled|phone_provider_disabled/i.test(msg)){
-        showAuthMessage("Account created, but Phone Auth is disabled in Supabase. Enable Phone provider, then try again.","error");
-      }else{
-        showAuthMessage("Account created, but the phone number could not be linked. Please check Phone Auth settings and try again.","error");
-      }
-      return;
-    }
-
-    await initializeApp(phoneData?.user || data.user);
-
+    await initializeApp(data.user);
   }else{
-
     showAuthMessage(
-      "Account created! Email confirmation must be completed before the phone can be linked. After confirmation, sign in with your email and add the phone number, or disable Email confirmations for this school/demo app.",
+      "Account created! Please complete email confirmation, then sign in using either your email or your phone number.",
       "success"
     );
-
   }
 
 });
-
 
 /* =========================================================
 PROFILE LOADER
@@ -10172,7 +10167,7 @@ setTimeout(run,700);
 
 /* =========================================================
    BEAUTIFIED SIGN-UP CONTROLS
-   - Email + Phone required on signup; either one can be used for login
+   - Email + Phone required on signup; either one can be used for login without SMS without SMS
    - Clean Buyer / Farmer role cards
    - Mobile-friendly touch targets
    ========================================================= */
