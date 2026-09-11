@@ -12912,14 +12912,16 @@ window.__setLunduAIbusy=function(v){
       const auth=await supabaseClient.auth.getUser();
       const uid=auth?.data?.user?.id;
       if(!uid)return false;
-      const {data}=await supabaseClient.from('users').select('role,full_name').eq('id',uid).maybeSingle();
+      const {data}=await supabaseClient.from('users').select('id,role,full_name').eq('auth_user_id',uid).maybeSingle();
       if(data?.role){
-        if(!window.currentProfile)window.currentProfile={id:uid};
-        window.currentProfile.id=uid;
+        if(!window.currentProfile)window.currentProfile={};
+        /* IMPORTANT: users.id is the farmer/profile id used by aggregation_contributions.
+           auth.uid() is users.auth_user_id and must never overwrite currentProfile.id. */
+        window.currentProfile.id=data.id;
         window.currentProfile.role=String(data.role).trim().toUpperCase();
         if(data.full_name)window.currentProfile.full_name=data.full_name;
       }
-      return String(window.currentProfile?.role||'').toUpperCase()==='FARMER';
+      return String(window.currentProfile?.role||'').trim().toUpperCase()==='FARMER';
     }catch(e){return String(window.currentProfile?.role||'').toUpperCase()==='FARMER';}
   };
 
@@ -12929,15 +12931,22 @@ window.__setLunduAIbusy=function(v){
     const farmer=await window.__lunduyanRefreshFarmerRole();
     if(!farmer){toast('Voting is for FARMER accounts. Your profile role is not FARMER yet.');return;}
     const pool=(window.__aggregations||[]).find(r=>String(r.id)===String(requestId));
-    const isContributor=!!pool?.is_current_contributor;
+    let isContributor=!!pool?.is_current_contributor;
+    /* Re-check against users.id, not auth.uid(), because contributions.farmer_id
+       references the public users profile id. */
+    try{
+      const uid=(await supabaseClient.auth.getUser())?.data?.user?.id;
+      const me=(await supabaseClient.from('users').select('id').eq('auth_user_id',uid).maybeSingle())?.data;
+      if(me?.id){
+        window.currentProfile.id=me.id;
+        const cr=await supabaseClient.from('aggregation_contributions').select('id,farmer_id,quantity,status').eq('request_id',requestId).eq('farmer_id',me.id);
+        isContributor=Array.isArray(cr.data)&&cr.data.some(c=>String(c.status||'').trim().toUpperCase()==='ACTIVE'&&Number(c.quantity||0)>0);
+      }
+    }catch(e){console.warn('Contributor check:',e);}
     if(!isContributor){toast('You cannot vote in this pool because you have not contributed harvest to it.');return;}
     const optionId=window.__aggregationVoteSelection?.[String(requestId)];
     if(!optionId){toast('Choose a price first. The selected price will turn green.');return;}
-    let result=await supabaseClient.rpc('submit_aggregation_price_vote_v2',{p_request_id:requestId,p_option_id:optionId});
-    if(result.error){
-      const fallback=await supabaseClient.rpc('submit_aggregation_price_vote',{p_request_id:requestId,p_option_id:optionId});
-      if(!fallback.error) result=fallback;
-    }
+    const result=await supabaseClient.rpc('submit_aggregation_price_vote_v2',{p_request_id:requestId,p_option_id:optionId});
     if(result.error){
       toast('Vote could not be saved: '+(result.error.message||'Please try again.'));
       return;
