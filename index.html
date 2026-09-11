@@ -12981,5 +12981,280 @@ window.__setLunduAIbusy=function(v){
   };
 })();
 </script>
+
+<style id="aggregationFullPoolDemoStyles">
+  .agg-demo-order-card{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+  .agg-demo-order-card.hidden{display:none!important}
+  .agg-demo-order-inner{width:min(560px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .agg-demo-order-inner h3{margin:0 0 6px}
+  .agg-demo-order-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .agg-demo-order-grid .full{grid-column:1/-1}
+  .agg-demo-order-inner label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+  .agg-demo-order-inner input,.agg-demo-order-inner textarea,.agg-demo-order-inner select{width:100%;box-sizing:border-box;border:1px solid #d7dee5;border-radius:12px;padding:11px;font:inherit}
+  .agg-demo-total{font-size:22px;font-weight:800;margin-top:6px}
+  .agg-demo-actions{display:flex;gap:10px;margin-top:18px}
+  .agg-demo-actions button{flex:1;border:0;border-radius:12px;padding:13px;font-weight:800;cursor:pointer}
+  .agg-demo-cancel{background:#eef2f5}
+  .agg-demo-submit{background:#1b7f3a;color:#fff}
+  .agg-demo-badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#fff3cd;color:#795b00;font-size:12px;font-weight:800}
+  @media(max-width:600px){.agg-demo-order-grid{grid-template-columns:1fr}.agg-demo-order-inner{padding:18px}.agg-demo-actions{flex-direction:column}}
+</style>
+
+<div id="aggregationFullPoolOrderModal" class="agg-demo-order-card hidden" aria-hidden="true">
+  <div class="agg-demo-order-inner">
+    <h3>Buy Full Aggregation</h3>
+    <div style="margin-bottom:14px;color:#667085">This order buys the entire community pool. Partial purchases are not allowed.</div>
+    <div id="aggDemoOrderBody"></div>
+    <div class="agg-demo-actions">
+      <button type="button" class="agg-demo-cancel" onclick="closeAggregationFullPoolOrder()">Cancel</button>
+      <button type="button" class="agg-demo-submit" onclick="submitAggregationFullPoolOrder()">Place Full Pool Order</button>
+    </div>
+  </div>
+</div>
+
+<script id="aggregationFullPoolDemoLogic">
+(function(){
+  const S = window.__aggregationFullPoolOrder = window.__aggregationFullPoolOrder || {request:null};
+
+  function esc(v){
+    return String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function money(v){ return '₱'+Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  window.openAggregationFullPoolOrder = function(requestId){
+    const list = window.__aggregations || window.aggregations || [];
+    const r = list.find(x=>String(x.id)===String(requestId));
+    if(!r){ if(typeof toast==='function')toast('Aggregation not found.'); return; }
+
+    const status=String(r.status||'').trim().toUpperCase();
+    const pollStatus=String(r.poll?.status||'').trim().toUpperCase();
+    const qty=Number(r.total_contributed||r.quantity||r.target_quantity||0);
+    const price=Number(r.poll?.winning_price||r.winning_price||r.final_price||0);
+
+    if(status!=='TARGET_REACHED' && status!=='SOLD'){
+      if(typeof toast==='function')toast('This aggregation is not ready to buy yet.'); return;
+    }
+    if(status==='SOLD'){
+      if(typeof toast==='function')toast('This aggregation has already been ordered.'); return;
+    }
+    if(pollStatus!=='CLOSED' || !(price>0) || !(qty>0)){
+      if(typeof toast==='function')toast('The final price is not ready yet.'); return;
+    }
+
+    S.request={r,qty,price};
+    const name=r.product_name||r.crop_name||r.title||'Community Aggregation';
+    const unit=r.unit||r.unit_name||'unit';
+    const total=qty*price;
+
+    const body=document.getElementById('aggDemoOrderBody');
+    if(body) body.innerHTML=`
+      <div class="agg-demo-order-grid">
+        <div class="full"><label>Aggregation</label><input value="${esc(name)}" readonly></div>
+        <div><label>Full pool quantity</label><input id="aggDemoQty" value="${esc(qty+' '+unit)}" readonly></div>
+        <div><label>Final price / unit</label><input value="${esc(money(price))}" readonly></div>
+        <div class="full"><label>Total amount</label><div class="agg-demo-total">${money(total)}</div></div>
+        <div class="full"><label>Transaction mode</label><div><span class="agg-demo-badge">COMPETITION DEMO MODE</span></div></div>
+        <div class="full"><label>Buyer / recipient name</label><input id="aggDemoBuyerName" placeholder="Enter buyer name"></div>
+        <div class="full"><label>Delivery / pickup details</label><textarea id="aggDemoDelivery" rows="3" placeholder="Enter delivery or pickup details"></textarea></div>
+      </div>`;
+
+    const modal=document.getElementById('aggregationFullPoolOrderModal');
+    if(modal){modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');}
+  };
+
+  window.closeAggregationFullPoolOrder=function(){
+    const modal=document.getElementById('aggregationFullPoolOrderModal');
+    if(modal){modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');}
+    S.request=null;
+  };
+
+  window.submitAggregationFullPoolOrder=async function(){
+    try{
+      if(!S.request) return;
+      const {r,qty,price}=S.request;
+      const buyerName=(document.getElementById('aggDemoBuyerName')?.value||'').trim();
+      const delivery=(document.getElementById('aggDemoDelivery')?.value||'').trim();
+      if(!buyerName){if(typeof toast==='function')toast('Enter the buyer name first.');return;}
+      if(!delivery){if(typeof toast==='function')toast('Enter delivery or pickup details first.');return;}
+
+      const auth=await supabaseClient.auth.getUser();
+      const authUid=auth?.data?.user?.id||'';
+      if(!authUid){if(typeof toast==='function')toast('Please sign in again.');return;}
+
+      let profile=null;
+      const byAuth=await supabaseClient.from('users').select('id,full_name,role').eq('auth_user_id',authUid).maybeSingle();
+      if(byAuth.data) profile=byAuth.data;
+      if(!profile){
+        const byId=await supabaseClient.from('users').select('id,full_name,role').eq('id',authUid).maybeSingle();
+        if(byId.data) profile=byId.data;
+      }
+      const role=String(profile?.role||window.currentProfile?.role||'').trim().toUpperCase();
+      const buyerId=profile?.id||window.currentProfile?.id||'';
+      if(role!=='BUYER'){if(typeof toast==='function')toast('Only BUYER accounts can purchase an aggregation.');return;}
+      if(!buyerId){if(typeof toast==='function')toast('Buyer profile could not be found.');return;}
+
+      const q=await supabaseClient.rpc('place_aggregation_full_pool_order',{
+        p_request_id:r.id,
+        p_buyer_name:buyerName,
+        p_delivery_details:delivery
+      });
+      if(q.error){
+        if(typeof toast==='function')toast(q.error.message||'Full-pool order could not be saved.');
+        return;
+      }
+      closeAggregationFullPoolOrder();
+      if(typeof toast==='function')toast('✓ Full pool order placed — Competition Demo Mode');
+      if(typeof loadAggregations==='function')await loadAggregations();
+      if(typeof loadTransactions==='function')await loadTransactions();
+      if(typeof renderTransactions==='function')await renderTransactions();
+    }catch(e){
+      console.error(e);
+      if(typeof toast==='function')toast(e?.message||'Full-pool order could not be saved.');
+    }
+  };
+})();
+</script>
+
+
+<script id="buyerAggregationCreateGuard">
+(function(){
+  function isBuyer(){
+    const r=String(window.currentProfile?.role||'').trim().toUpperCase();
+    return r==='BUYER';
+  }
+  function hideBuyerCreateControls(){
+    if(!isBuyer()) return;
+    document.querySelectorAll('[onclick*="createAggregation"],[onclick*="openCreateAggregation"],[data-action="create-aggregation"]').forEach(el=>{
+      el.style.display='none';
+    });
+    document.querySelectorAll('button,a').forEach(el=>{
+      const t=String(el.textContent||'').trim().toLowerCase();
+      if(t==='create aggregation' || t.includes('create aggregation')) el.style.display='none';
+    });
+  }
+  window.addEventListener('load',hideBuyerCreateControls);
+  setInterval(hideBuyerCreateControls,1200);
+})();
+</script>
+
+
+<style id="authBackEmailPhoneFixStyles">
+  .lunduyan-auth-back{
+    position:absolute!important;left:16px!important;top:16px!important;
+    z-index:20!important;border:0!important;background:transparent!important;
+    font-weight:700!important;cursor:pointer!important;padding:8px 10px!important;
+  }
+  .lunduyan-auth-choice-note{font-size:13px;color:#667085;margin:6px 0 14px}
+</style>
+<script id="authBackEmailPhoneLoginFix">
+(function(){
+  function norm(v){return String(v||'').trim();}
+  function isEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));}
+  function isPhone(v){return /^[0-9+()\-\s]{7,20}$/.test(norm(v));}
+
+  // Remove forced role/account-type choice controls from sign-up when present.
+  function cleanSignupChoices(){
+    const textNodes = document.querySelectorAll('label,button,select,[role="radio"],input[type="radio"]');
+    textNodes.forEach(el=>{
+      const t=norm(el.textContent).toLowerCase();
+      const v=norm(el.value).toLowerCase();
+      const aria=norm(el.getAttribute('aria-label')).toLowerCase();
+      if((t==='farmer'||t==='buyer'||t.includes('choose account type')||t.includes('select account type')||
+          v==='farmer'||v==='buyer'||aria.includes('account type')) && el.closest('form')){
+        const parent=el.closest('.form-group,.field,.input-group,div')||el;
+        if(parent && parent !== document.body) parent.style.display='none';
+      }
+    });
+  }
+
+  function setupAuthFields(){
+    // Login: one identifier field accepts either email OR phone.
+    document.querySelectorAll('input').forEach(input=>{
+      const p=(norm(input.placeholder)+' '+norm(input.name)+' '+norm(input.id)).toLowerCase();
+      if(p.includes('email') || p.includes('phone') || p.includes('mobile') || p.includes('contact') || p.includes('number')){
+        const form=input.closest('form');
+        if(form && /log.?in|sign.?in/i.test(form.innerText||'')){
+          input.placeholder='Email or phone number';
+          input.setAttribute('autocomplete','username');
+          input.setAttribute('inputmode','email');
+        }
+      }
+    });
+    cleanSignupChoices();
+  }
+
+  // Back button: use the app's existing view/navigation when possible.
+  window.lunduyanAuthBack=function(){
+    if(typeof showWelcome==='function'){showWelcome();return;}
+    if(typeof showLanding==='function'){showLanding();return;}
+    if(typeof goToLanding==='function'){goToLanding();return;}
+    if(typeof navigateTo==='function'){try{navigateTo('welcome');return;}catch(e){}}
+    if(history.length>1){history.back();return;}
+    document.querySelectorAll('.auth-screen,.login-screen,.signup-screen,.auth-container').forEach(el=>el.classList.add('hidden'));
+    const welcome=document.querySelector('#landing,#welcome,#welcomeScreen,.landing-screen');
+    if(welcome) welcome.classList.remove('hidden');
+  };
+
+  function addBackButtons(){
+    document.querySelectorAll('form').forEach(form=>{
+      const txt=(form.innerText||'').toLowerCase();
+      if(!/log.?in|sign.?in|sign.?up|register|create account/.test(txt)) return;
+      if(form.querySelector('.lunduyan-auth-back')) return;
+      const b=document.createElement('button');
+      b.type='button'; b.className='lunduyan-auth-back'; b.textContent='← Back';
+      b.onclick=window.lunduyanAuthBack;
+      form.style.position='relative';
+      form.prepend(b);
+    });
+  }
+
+  // Intercept login submission when the app has separate email/phone fields.
+  document.addEventListener('submit', async function(ev){
+    const form=ev.target;
+    const txt=(form.innerText||'').toLowerCase();
+    if(!/log.?in|sign.?in/.test(txt)) return;
+
+    const inputs=[...form.querySelectorAll('input')].filter(i=>!i.disabled);
+    const identifier=inputs.find(i=>{
+      const p=(norm(i.placeholder)+' '+norm(i.name)+' '+norm(i.id)).toLowerCase();
+      return p.includes('email')||p.includes('phone')||p.includes('mobile')||p.includes('contact')||p.includes('number');
+    });
+    if(!identifier) return;
+
+    const value=norm(identifier.value);
+    if(!value) return;
+
+    // If the existing app already has its own submit handler, do not interfere with it.
+    // This only normalizes the field so it can carry either identifier.
+    if(isEmail(value) || isPhone(value)){
+      identifier.setAttribute('data-lunduyan-login-identifier','true');
+    }
+  }, true);
+
+  // For Supabase auth, phone login uses the phone auth API when a phone identifier is supplied.
+  window.lunduyanLoginWithEmailOrPhone=async function(identifier,password){
+    const id=norm(identifier), pw=norm(password);
+    if(!id||!pw){if(typeof toast==='function')toast('Enter your email or phone number and password.');return null;}
+    if(typeof supabaseClient==='undefined'){if(typeof toast==='function')toast('Login service is unavailable.');return null;}
+    let res;
+    if(isEmail(id)){
+      res=await supabaseClient.auth.signInWithPassword({email:id,password:pw});
+    }else if(isPhone(id)){
+      res=await supabaseClient.auth.signInWithPassword({phone:id,password:pw});
+    }else{
+      if(typeof toast==='function')toast('Enter a valid email or phone number.');
+      return null;
+    }
+    if(res.error){if(typeof toast==='function')toast(res.error.message||'Login failed.');return null;}
+    return res.data;
+  };
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    setupAuthFields(); addBackButtons();
+    setInterval(()=>{setupAuthFields();addBackButtons();},1000);
+  });
+})();
+</script>
+
 </body>
 </html>
