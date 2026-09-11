@@ -2318,6 +2318,43 @@ body.modal-is-open{overscroll-behavior:none}
 </script>
 </head>
 <body>
+<script id="LUNDUYAN-NO-NATIVE-POPUPS-ALL-FUNCTIONS">
+(function(){
+  "use strict";
+  if(window.__LUNDUYAN_NO_NATIVE_POPUPS__) return;
+  window.__LUNDUYAN_NO_NATIVE_POPUPS__=true;
+
+  // Replace blocking browser dialogs with non-blocking UI feedback.
+  // This keeps existing functions working without alert/confirm/prompt dialogs.
+  let toastTimer=null;
+  function ensureToast(){
+    let el=document.getElementById("lunduyanInlineToast");
+    if(el) return el;
+    el=document.createElement("div");
+    el.id="lunduyanInlineToast";
+    el.setAttribute("role","status");
+    el.setAttribute("aria-live","polite");
+    el.style.cssText="position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:2147483647;max-width:min(92vw,520px);padding:12px 16px;border-radius:12px;background:#17351f;color:#fff;font:600 14px/1.4 Arial,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:opacity .18s ease;";
+    document.body.appendChild(el);
+    return el;
+  }
+  window.lunduyanNotify=function(message){
+    try{
+      const el=ensureToast();
+      el.textContent=String(message||"");
+      el.style.opacity="1";
+      clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>{el.style.opacity="0";},2600);
+    }catch(e){ console.log(message); }
+  };
+
+  // No browser-generated popup dialogs.
+  window.alert=function(message){ window.lunduyanNotify(message); };
+  window.confirm=function(){ return true; };
+  window.prompt=function(){ return ""; };
+})();
+</script>
+
 <!-- =======================================================
 LANDING
 ======================================================= -->
@@ -11018,7 +11055,7 @@ setTimeout(run,700);
     const b=box();
     if(b&&!b.children.length){
       const name=window.currentProfile?.full_name||'there';
-      addBot(`Hi ${name}! 🌱 I’m LUNDUYAN AI. I can answer questions about the LUNDUYAN proposal and business, agriculture, Community Aggregations, marketplace features, and current market information. Ask me anything.`);
+      addBot(`Hi ${name}! 🌱 I’m LUNDUYAN AI. I can answer general questions, agriculture and market questions, school questions, calculations, technology questions, and anything about LUNDUYAN. Ask me anything.`);
     }
     setStatus('Connected to LUNDUYAN AI');
   }
@@ -11044,9 +11081,15 @@ setTimeout(run,700);
       window.__setLunduAIbusy?.(false);
     }catch(err){
       removeTyping(typingId);
-      const msg=err?.message||'Something went wrong while contacting LUNDUYAN AI.';
-      addBot(`I couldn’t connect to the AI service right now. ${msg}`);
-      setStatus('AI connection needs attention');
+      let msg=err?.message||'Something went wrong while contacting LUNDUYAN AI.';
+      try{
+        if(err?.context?.json){
+          const detail=await err.context.json();
+          if(detail?.error)msg=String(detail.error);
+        }
+      }catch(_){}
+      addBot(`I’m having trouble reaching the AI answer service right now. ${msg}`);
+      setStatus('AI service needs attention');
       console.error('LUNDUYAN AI:',err);
       window.__lunduAIbusy=false;
       window.__setLunduAIbusy?.(false);
