@@ -11738,11 +11738,30 @@ window.__setLunduAIbusy=function(v){
     color:#b42318!important;
   }
 
-  /* Polished feedback/report modal */
+  /* Polished feedback/report modal — fully scrollable on phone and WebView */
   #moderationFeedbackModal .modal-card{
     max-width:620px!important;
     padding:0!important;
     overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    max-height:90vh!important;
+  }
+  #moderationFeedbackModal .lunduyan-moderation-head{
+    flex:0 0 auto!important;
+  }
+  #moderationFeedbackModal .lunduyan-moderation-body{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    padding-bottom:28px!important;
+    scrollbar-width:thin;
+  }
+  #moderationFeedbackModal .lunduyan-moderation-actions{
+    padding-bottom:4px!important;
   }
   .lunduyan-moderation-head{
     padding:20px 22px;
@@ -11838,11 +11857,38 @@ window.__setLunduAIbusy=function(v){
     }
     #myProfileContent{padding:16px!important;padding-bottom:34px!important}
     .lunduyan-profile-actions{grid-template-columns:1fr}
+    #moderationFeedbackModal{
+      align-items:flex-start!important;
+      padding:9px!important;
+      overflow:hidden!important;
+    }
     #moderationFeedbackModal .modal-card{
       width:100%!important;max-width:none!important;
-      max-height:calc(100dvh - 18px)!important;border-radius:20px!important;
+      height:calc(100dvh - 18px)!important;
+      max-height:calc(100dvh - 18px)!important;
+      border-radius:20px!important;
+      display:flex!important;
+      flex-direction:column!important;
+      overflow:hidden!important;
     }
-    .lunduyan-moderation-body{padding:17px}
+    #moderationFeedbackModal .lunduyan-moderation-body{
+      padding:17px 17px calc(34px + env(safe-area-inset-bottom, 0px))!important;
+      flex:1 1 auto!important;
+      min-height:0!important;
+      overflow-y:auto!important;
+      overflow-x:hidden!important;
+      -webkit-overflow-scrolling:touch!important;
+      overscroll-behavior-y:contain!important;
+    }
+    #moderationFeedbackModal .lunduyan-moderation-actions{
+      flex-wrap:wrap!important;
+      padding-top:10px!important;
+      padding-bottom:8px!important;
+      gap:10px!important;
+    }
+    #moderationFeedbackModal .lunduyan-moderation-actions button{
+      min-height:48px!important;
+    }
     .lunduyan-choice-row{grid-template-columns:1fr}
     #moderatorInboxModal .modal-card{
       width:100%!important;max-width:none!important;
@@ -11981,11 +12027,15 @@ window.__setLunduAIbusy=function(v){
     $('moderationFeedbackStatus').innerHTML='';
     modal.classList.remove('hidden');
     if(typeof setModalScrollLock==='function')setModalScrollLock(true);
-    if(type==='REPORT'){
-      $('moderationReportReason')?.focus();
-    }else{
-      $('moderationSubject')?.focus();
-    }
+    const body=modal.querySelector('.lunduyan-moderation-body');
+    if(body)body.scrollTop=0;
+    requestAnimationFrame(()=>{
+      if(type==='REPORT'){
+        $('moderationReportReason')?.focus({preventScroll:true});
+      }else{
+        $('moderationSubject')?.focus({preventScroll:true});
+      }
+    });
   };
   window.closeModerationFeedback=function(){
     $('moderationFeedbackModal')?.classList.add('hidden');
@@ -11995,7 +12045,7 @@ window.__setLunduAIbusy=function(v){
   window.submitModerationMessage=async function(){
     if(moderationBusy)return;
     const p=profile();
-    if(!p){alert('Please log in first.');return;}
+    if(!p){const status=$('moderationFeedbackStatus');if(status)status.innerHTML='<div class="message error">Please log in first.</div>';return;}
     const status=$('moderationFeedbackStatus');
     const btn=$('moderationSubmitBtn');
     moderationBusy=true;
