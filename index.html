@@ -12787,5 +12787,107 @@ window.__setLunduAIbusy=function(v){
 }
 </style>
 
+
+<style id="LUNDUYAN_NO_POPUPS_AND_VOTING_POLISH">
+/* LUNDUYAN MIT mode: all feedback/status messages stay inside the page. */
+#lunduyanInlineToast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,18px);z-index:2147483647;max-width:min(92vw,520px);padding:13px 16px;border-radius:14px;background:#12351f;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.18);font-size:14px;font-weight:750;line-height:1.45;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;text-align:center}
+#lunduyanInlineToast.show{opacity:1;transform:translate(-50%,0)}
+#aggregationSection .aggregation-vote-ready{overflow:hidden;background:#fff!important;border:1px solid #dce9df!important;box-shadow:0 10px 28px rgba(18,53,31,.08)!important;padding:20px!important}
+#aggregationSection .aggregation-vote-ready .poll-head{padding-bottom:14px!important;border-bottom:1px solid #e8eee9!important;margin-bottom:14px!important}
+#aggregationSection .aggregation-vote-ready .poll-head strong{font-size:17px!important;letter-spacing:.2px!important}
+#aggregationSection .aggregation-vote-ready .poll-head small{font-size:12px!important;line-height:1.45!important;max-width:650px!important}
+#aggregationSection .poll-leader{padding:9px 12px!important;border-radius:12px!important;background:#eaf8ef!important;color:#126b30!important;font-size:15px!important}
+#aggregationSection .aggregation-poll-instruction{margin:0 0 12px!important;color:#405148!important;font-size:13px!important}
+#aggregationSection .poll-option{min-height:76px!important;margin:9px 0!important;padding:13px 15px!important;border:2px solid #e1e8e3!important;border-radius:15px!important;background:#fff!important;box-shadow:none!important;grid-template-columns:1fr auto!important}
+#aggregationSection .poll-option:not(:disabled):hover{transform:none!important;border-color:#16833b!important;box-shadow:0 4px 14px rgba(22,131,59,.10)!important}
+#aggregationSection .poll-option:active:not(:disabled){transform:scale(.99)!important}
+#aggregationSection .poll-option.selected{border-color:#16833b!important;background:#eaf8ef!important;box-shadow:0 0 0 3px rgba(22,131,59,.12)!important}
+#aggregationSection .poll-option.selected:after{top:12px!important;right:12px!important;width:26px!important;height:26px!important}
+#aggregationSection .poll-option-main{font-size:18px!important;line-height:1.2!important;padding-right:30px!important}
+#aggregationSection .poll-option em{font-size:11px!important;color:#66756c!important}
+#aggregationSection .poll-option.selected em{color:#16833b!important}
+#aggregationSection .poll-bar{height:6px!important;margin-top:2px!important}
+#aggregationSection .aggregation-select-hint,#aggregationSection .aggregation-selected-price{border:1px solid #d9e9dd!important}
+#aggregationSection .aggregation-vote-submit{width:100%!important;min-height:54px!important;margin-top:12px!important;font-size:14px!important;letter-spacing:.2px!important}
+#aggregationSection .aggregation-vote-submit:not(.ready){opacity:.58!important;box-shadow:none!important}
+@media(min-width:701px){
+ #aggregationSection .aggregation-vote-ready{max-width:760px!important;margin-left:auto!important;margin-right:auto!important}
+ #aggregationSection .poll-option{display:grid!important}
+}
+@media(max-width:700px){
+ #aggregationSection .aggregation-vote-ready{padding:14px!important;margin-top:12px!important}
+ #aggregationSection .aggregation-vote-ready .poll-head{gap:9px!important}
+ #aggregationSection .aggregation-vote-ready .poll-head strong{font-size:15px!important}
+ #aggregationSection .poll-leader{width:100%!important;text-align:center!important}
+ #aggregationSection .poll-option{min-height:82px!important;padding:14px!important;border-radius:14px!important}
+ #aggregationSection .poll-option-main{font-size:17px!important}
+ #aggregationSection .aggregation-vote-submit{min-height:52px!important;position:sticky!important;bottom:8px!important;z-index:4!important}
+}
+</style>
+<script id="LUNDUYAN_MIT_NO_POPUPS_AND_VOTE_FIX">
+(function(){
+  'use strict';
+  function toast(message){
+    let t=document.getElementById('lunduyanInlineToast');
+    if(!t){t=document.createElement('div');t.id='lunduyanInlineToast';document.body.appendChild(t);}
+    t.textContent=String(message||'');t.classList.add('show');
+    clearTimeout(window.__lunduyanToastTimer);
+    window.__lunduyanToastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+  }
+  window.lunduyanToast=toast;
+  /* No native alert / confirm / prompt dialogs anywhere in the app. */
+  window.alert=function(message){toast(message);};
+  window.confirm=function(){return true;};
+  window.prompt=function(){return '';};
+
+  /* Make the farmer role authoritative for the voting UI. */
+  window.__lunduyanRefreshFarmerRole=async function(){
+    try{
+      const auth=await supabaseClient.auth.getUser();
+      const uid=auth?.data?.user?.id;
+      if(!uid)return false;
+      const {data}=await supabaseClient.from('users').select('role,full_name').eq('id',uid).maybeSingle();
+      if(data?.role){
+        if(!window.currentProfile)window.currentProfile={id:uid};
+        window.currentProfile.id=uid;
+        window.currentProfile.role=String(data.role).trim().toUpperCase();
+        if(data.full_name)window.currentProfile.full_name=data.full_name;
+      }
+      return String(window.currentProfile?.role||'').toUpperCase()==='FARMER';
+    }catch(e){return String(window.currentProfile?.role||'').toUpperCase()==='FARMER';}
+  };
+
+  /* Replace the vote submit handler with a role-safe, no-popup version.
+     It tries the final v2 RPC first and the compatible RPC second. */
+  window.submitAggregationVote=async function(requestId){
+    const farmer=await window.__lunduyanRefreshFarmerRole();
+    if(!farmer){toast('Voting is for FARMER accounts. Your profile role is not FARMER yet.');return;}
+    const optionId=window.__aggregationVoteSelection?.[String(requestId)];
+    if(!optionId){toast('Choose a price first. The selected price will turn green.');return;}
+    let result=await supabaseClient.rpc('submit_aggregation_price_vote_v2',{p_request_id:requestId,p_option_id:optionId});
+    if(result.error){
+      const fallback=await supabaseClient.rpc('submit_aggregation_price_vote',{p_request_id:requestId,p_option_id:optionId});
+      if(!fallback.error) result=fallback;
+    }
+    if(result.error){
+      toast('Vote could not be saved: '+(result.error.message||'Please try again.'));
+      return;
+    }
+    if(window.__aggregationVoteSelection)delete window.__aggregationVoteSelection[String(requestId)];
+    toast('✓ Vote saved. Your price choice is recorded.');
+    await loadAggregations();
+  };
+
+  /* Make option taps immediately obvious, then let the normal submit button save it. */
+  const oldSelect=window.selectAggregationPrice;
+  window.selectAggregationPrice=function(requestId,optionId){
+    if(typeof oldSelect==='function')oldSelect(requestId,optionId);
+    document.querySelectorAll('#aggregationSection .poll-option').forEach(b=>b.classList.remove('selected'));
+    const buttons=[...document.querySelectorAll('#aggregationSection .poll-option')];
+    const hit=buttons.find(b=>(b.getAttribute('onclick')||'').includes(String(optionId)));
+    if(hit){hit.classList.add('selected');hit.setAttribute('aria-pressed','true');}
+  };
+})();
+</script>
 </body>
 </html>
