@@ -10606,15 +10606,15 @@ setTimeout(run,700);
   function renderPricePoll(r){
     const status=String(r.status||'OPEN').toUpperCase();
     const poll=r.poll, options=r.price_options||[];
-    if(status!=='TARGET_REACHED') return '<div class="aggregation-poll muted">Price voting opens after the pool target is reached.</div>';
-    if(!poll||!options.length) return '<div class="aggregation-poll muted">Price choices are being prepared.</div>';
+    if(status!=='TARGET_REACHED') return '';
+    if(!poll||!options.length) return '';
     const closed=String(poll.status||'OPEN').toUpperCase()==='CLOSED';
     const totalVotes=options.reduce((n,o)=>n+Number(o.votes||0),0);
     const leader=[...options].sort((a,b)=>Number(b.votes)-Number(a.votes)||Number(a.price)-Number(b.price))[0];
     const isContributor=(r.contributors||[]).some(c=>String(c.farmer_id)===String(window.currentProfile?.id));
     const canVote=isFarmer()&&isContributor&&!closed;
-    const note=closed?'Voting complete — final community price selected.':canVote?'Tap one price to vote. Tap another price to change your vote.':'Only farmers who contributed to this pool can vote.';
-    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${note}</small></div><span class="poll-leader">${closed&&poll.winning_price!=null?'₱'+money(poll.winning_price)+'/'+esc(r.unit):leader?'₱'+money(leader.price)+'/'+esc(r.unit):'PRICE VOTE'}</span></div><div class="poll-choice-label">${closed?'FINAL COMMUNITY PRICE':'CHOOSE ONE PRICE'}</div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><span class="poll-choice-bottom"><em>${o.votes} vote${o.votes===1?'':'s'}</em>${mine?'<strong>✓ YOUR VOTE</strong>':''}</span></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Final price selected':' · One vote per contributing farmer'}</div></div>`;
+    const note=closed?'Voting complete — final price is the average of all selected price choices.':canVote?'Tap one price to vote. Tap another price to change your vote.':'Only farmers who contributed to this pool can vote.';
+    return `<div class="aggregation-poll"><div class="poll-head"><div><strong>🗳️ FARMER PRICE VOTING</strong><small>${note}</small></div><span class="poll-leader">${closed&&poll.winning_price!=null?'₱'+money(poll.winning_price)+'/'+esc(r.unit):leader?'₱'+money(leader.price)+'/'+esc(r.unit):'PRICE VOTE'}</span></div><div class="poll-choice-label">${closed?'FINAL COMMUNITY PRICE':'CHOOSE ONE PRICE'}</div>${options.map(o=>{const pct=totalVotes?Math.round(Number(o.votes)/totalVotes*100):0;const mine=String(r.my_vote||'')===String(o.id);return `<button type="button" class="poll-option ${mine?'selected':''}" ${!canVote?'disabled':''} onclick="voteAggregationPrice('${r.id}','${o.id}')"><span><b>₱${money(o.price)}</b> / ${esc(r.unit)}</span><span class="poll-bar"><i style="width:${pct}%"></i></span><span class="poll-choice-bottom"><em>${o.votes} vote${o.votes===1?'':'s'}</em>${mine?'<strong>✓ YOUR VOTE</strong>':''}</span></button>`;}).join('')}<div class="poll-foot">${totalVotes} vote${totalVotes===1?'':'s'}${closed?' · Average of voted price choices':' · One vote per contributing farmer'}</div></div>`;
   }
 
   function renderAggregations(rows){
