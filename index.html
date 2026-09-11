@@ -13364,5 +13364,138 @@ window.__setLunduAIbusy=function(v){
 })();
 </script>
 
+
+<style id="authVisibilityEmergencyFix">
+  /* Keep authentication entry points visible even if an earlier stylesheet hides them. */
+  #loginScreen,#signupScreen,#loginPage,#signupPage,.login-screen,.signup-screen,
+  .auth-screen,.auth-page,.auth-container,.auth-card{
+    box-sizing:border-box;
+  }
+  .lunduyan-auth-entry-fix{
+    position:fixed;inset:0;z-index:999999;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;background:#f6faf7;
+    overflow:auto;
+  }
+  .lunduyan-auth-entry-fix.hidden{display:none!important}
+  .lunduyan-auth-entry-card{
+    width:min(430px,100%);background:#fff;border:1px solid #dce6df;
+    border-radius:22px;padding:24px;box-shadow:0 16px 45px rgba(0,0,0,.12);
+    position:relative;
+  }
+  .lunduyan-auth-entry-card h2{margin:0 0 6px}
+  .lunduyan-auth-entry-card p{margin:0 0 18px;color:#667085}
+  .lunduyan-auth-entry-card input{
+    width:100%;box-sizing:border-box;margin:6px 0 10px;padding:12px;
+    border:1px solid #ccd7d0;border-radius:12px;font:inherit;
+  }
+  .lunduyan-auth-entry-card button{
+    width:100%;padding:12px;border:0;border-radius:12px;font-weight:800;
+    cursor:pointer;margin-top:7px;
+  }
+  .lunduyan-auth-entry-card .primary{background:#1b7f3a;color:#fff}
+  .lunduyan-auth-entry-card .secondary{background:#edf3ee}
+  .lunduyan-auth-back-fixed{
+    background:transparent!important;text-align:left!important;
+    padding:0!important;margin:0 0 15px!important;width:auto!important;
+    color:#1b7f3a;
+  }
+</style>
+
+<div id="lunduyanAuthEmergency" class="lunduyan-auth-entry-fix">
+  <div class="lunduyan-auth-entry-card">
+    <button type="button" class="lunduyan-auth-back-fixed" onclick="lunduyanEmergencyBack()">← Back</button>
+    <div id="lunduyanAuthEntryChooser">
+      <h2>Welcome to LUNDUYAN</h2>
+      <p>Sign in or create your account.</p>
+      <button type="button" class="primary" onclick="lunduyanEmergencyShowLogin()">Log in</button>
+      <button type="button" class="secondary" onclick="lunduyanEmergencyShowSignup()">Sign up</button>
+    </div>
+
+    <form id="lunduyanEmergencyLogin" style="display:none" onsubmit="return lunduyanEmergencyLoginSubmit(event)">
+      <h2>Log in</h2>
+      <p>Use your email or phone number.</p>
+      <input id="lunduyanLoginIdentifier" type="text" placeholder="Email or phone number" autocomplete="username" required>
+      <input id="lunduyanLoginPassword" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button type="submit" class="primary">Log in</button>
+    </form>
+
+    <form id="lunduyanEmergencySignup" style="display:none" onsubmit="return lunduyanEmergencySignupSubmit(event)">
+      <h2>Sign up</h2>
+      <p>Fill in your email and phone number.</p>
+      <input id="lunduyanSignupName" type="text" placeholder="Full name" required>
+      <input id="lunduyanSignupEmail" type="email" placeholder="Email" autocomplete="email" required>
+      <input id="lunduyanSignupPhone" type="tel" placeholder="Phone number" autocomplete="tel" required>
+      <input id="lunduyanSignupPassword" type="password" placeholder="Password" autocomplete="new-password" required>
+      <button type="submit" class="primary">Create account</button>
+    </form>
+  </div>
+</div>
+
+<script id="authVisibilityEmergencyLogic">
+(function(){
+  const $=id=>document.getElementById(id);
+  function show(which){
+    $('lunduyanAuthEntryChooser').style.display=which==='chooser'?'block':'none';
+    $('lunduyanEmergencyLogin').style.display=which==='login'?'block':'none';
+    $('lunduyanEmergencySignup').style.display=which==='signup'?'block':'none';
+    $('lunduyanAuthEmergency').classList.remove('hidden');
+  }
+  window.lunduyanEmergencyShowLogin=()=>show('login');
+  window.lunduyanEmergencyShowSignup=()=>show('signup');
+  window.lunduyanEmergencyBack=()=>show('chooser');
+
+  window.lunduyanEmergencyLoginSubmit=async function(e){
+    e.preventDefault();
+    const id=$('lunduyanLoginIdentifier').value.trim();
+    const pw=$('lunduyanLoginPassword').value;
+    if(typeof supabaseClient==='undefined'){alert('Login service is unavailable.');return false;}
+    let q;
+    if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id)){
+      q=await supabaseClient.auth.signInWithPassword({email:id,password:pw});
+    }else{
+      q=await supabaseClient.auth.signInWithPassword({phone:id,password:pw});
+    }
+    if(q.error){alert(q.error.message||'Login failed.');return false;}
+    $('lunduyanAuthEmergency').classList.add('hidden');
+    location.reload();
+    return false;
+  };
+
+  window.lunduyanEmergencySignupSubmit=async function(e){
+    e.preventDefault();
+    const name=$('lunduyanSignupName').value.trim();
+    const email=$('lunduyanSignupEmail').value.trim();
+    const phone=$('lunduyanSignupPhone').value.trim();
+    const pw=$('lunduyanSignupPassword').value;
+    if(typeof supabaseClient==='undefined'){alert('Sign-up service is unavailable.');return false;}
+    const q=await supabaseClient.auth.signUp({
+      email:email,password:pw,
+      options:{data:{full_name:name,phone:phone}}
+    });
+    if(q.error){alert(q.error.message||'Sign up failed.');return false;}
+    alert(q.data?.session ? 'Account created.' : 'Account created. Check your email if confirmation is required.');
+    show('chooser');
+    return false;
+  };
+
+  // Do not show the emergency screen when a session already exists.
+  async function init(){
+    try{
+      if(typeof supabaseClient!=='undefined'){
+        const s=await supabaseClient.auth.getSession();
+        if(s?.data?.session){
+          $('lunduyanAuthEmergency').classList.add('hidden');
+          return;
+        }
+      }
+    }catch(e){}
+    show('chooser');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+
 </body>
 </html>
